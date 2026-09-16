@@ -1,0 +1,10 @@
+{
+  "name": "makelaarscockpit",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "lint": "echo 'lint volgt'",
+    "typecheck": "echo 'typecheck volgt'",
+    "test": "echo 'tests volgen'"
+  }
+}

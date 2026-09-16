@@ -1,0 +1,20 @@
+{
+  "name": "makelaarscockpit",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postCreateCommand": "az bicep install && sudo apt-get update && sudo apt-get install -y postgresql-client && npm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-azuretools.vscode-bicep",
+        "anthropic.claude-code",
+        "dbaeumer.vscode-eslint",
+        "github.vscode-pull-request-github"
+      ]
+    }
+  }
+}
