@@ -17,9 +17,16 @@ Rollen: Contributor op `rg-cockpit-dev-neu` en `rg-cockpit-shared-neu`, User Acc
 
 ## Federated credential (stap 3.2)
 
-Subject moet exact overeenkomen met de repo en het GitHub-environment:
-`repo:CherryMedia1/makelaarscockpit:environment:dev`
-(de handleiding noemt `makelaarscockpit/platform`; verhuist de repo naar een organisatie, dan de credential opnieuw aanmaken).
+GitHub presenteert het subject inclusief account- en repo-id, en dat moet exact overeenkomen:
+
+| Naam | Subject |
+|---|---|
+| `github-cockpit-dev-main` | `repo:CherryMedia1@283943421/makelaarscockpit@1372678128:environment:dev` |
+
+De klassieke vorm uit de handleiding (`repo:CherryMedia1/makelaarscockpit:environment:dev`) werkte niet (AADSTS700213).
+
+Faalt de login met AADSTS700213, kijk dan in de log van azure/login naar "subject claim" en maak een credential met precies die waarde.
+Verhuist de repo naar een organisatie, dan veranderen owner en id en moet de credential opnieuw.
 
 ## GitHub (stap 3.3)
 
