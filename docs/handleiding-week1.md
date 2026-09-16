@@ -28,7 +28,7 @@ docker --version
 Alle vier moeten een versienummer geven.
 
 **Twee besluiten die je nu neemt**
-1. Regio: West Europe (Nederland is er het dichtst bij, EU-dataresidentie). Kortnaam in alle namen: `weu`.
+1. Regio: North Europe (Dublin). West Europe accepteert voor deze subscription geen nieuwe klanten en Germany West Central blokkeert PostgreSQL; zie docs/adr/002-regio-north-europe.md. Kortnaam in alle namen: `neu`.
 2. Backendtaal: TypeScript (deze handleiding gaat daarvan uit).
 
 ---
@@ -159,7 +159,7 @@ Infra in Bicep (infra/bicep). CI/CD via GitHub Actions.
 
 ## Commando's
 npm install · npm run lint · npm run typecheck · npm run test
-Infra dev: az deployment group create -g rg-cockpit-dev-weu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
+Infra dev: az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
 ```
 
 Maak ook `docs/adr/000-template.md`:
@@ -222,30 +222,30 @@ Bicep is een taal waarin je beschrijft welke Azure-resources er moeten zijn. Azu
 **Doel:** twee "mappen" in Azure: één gedeeld, één voor dev.
 
 ```
-az group create --name rg-cockpit-shared-weu --location westeurope
-az group create --name rg-cockpit-dev-weu --location westeurope
+az group create --name rg-cockpit-shared-neu --location northeurope
+az group create --name rg-cockpit-dev-neu --location northeurope
 ```
 
 ### Stap 2.2 Wat er in de gedeelde groep komt
 
 Gedeeld betekent: gebruikt door alle omgevingen. In week 1 zijn dat:
-- Container Registry (`crcockpitweu`, alleen letters en cijfers toegestaan): hier komen de Docker-images.
-- Log Analytics-werkruimte (`log-cockpit-weu`): centrale logs.
+- Container Registry (`crcockpitneu`, alleen letters en cijfers toegestaan): hier komen de Docker-images.
+- Log Analytics-werkruimte (`log-cockpit-neu`): centrale logs.
 
 ### Stap 2.3 Wat er in de dev-groep komt en waarom
 
 | Resource | Naam | Waarvoor |
 |---|---|---|
-| Virtual Network + subnets | `vnet-cockpit-dev-weu` | Privénetwerk waarin compute en database praten |
-| Public IP + NAT Gateway | `pip-nat-cockpit-dev-weu`, `nat-cockpit-dev-weu` | Één vast uitgaand IP-adres; dit adres whitelist je bij Realworks |
-| PostgreSQL Flexible Server | `psql-cockpit-dev-weu` | Database. In dev: publiek bereikbaar met firewall; in prod: privé |
-| Storage-account | `stcockpitdevweu` | Blob-containers: raw-realworks, documents, audio |
-| Key Vault | `kv-cockpit-dev-weu` | Secrets, o.a. Realworks-tokens per tenant |
-| Service Bus (Standard) | `sb-cockpit-dev-weu` | Berichtenbus met topics: realworks-events, workflow-commands, document-jobs |
-| Container Apps Environment | `cae-cockpit-dev-weu` | Omgeving waarin de API-container draait (aan het VNet gekoppeld) |
-| Function App (Flex Consumption) | `func-cockpit-dev-weu` | Webhooks en sync-jobs (aan het VNet gekoppeld) |
-| Application Insights | `appi-cockpit-dev-weu` | Monitoring, gekoppeld aan de gedeelde Log Analytics |
-| User-assigned Managed Identity | `id-cockpit-dev-weu` | De "identiteit" van je apps; krijgt rechten op Key Vault, Storage en Service Bus |
+| Virtual Network + subnets | `vnet-cockpit-dev-neu` | Privénetwerk waarin compute en database praten |
+| Public IP + NAT Gateway | `pip-nat-cockpit-dev-neu`, `nat-cockpit-dev-neu` | Één vast uitgaand IP-adres; dit adres whitelist je bij Realworks |
+| PostgreSQL Flexible Server | `psql-cockpit-dev-neu` | Database. In dev: publiek bereikbaar met firewall; in prod: privé |
+| Storage-account | `stcockpitdevneu` | Blob-containers: raw-realworks, documents, audio |
+| Key Vault | `kv-cockpit-dev-neu-01` | Secrets, o.a. Realworks-tokens per tenant |
+| Service Bus (Standard) | `sb-cockpit-dev-neu` | Berichtenbus met topics: realworks-events, workflow-commands, document-jobs |
+| Container Apps Environment | `cae-cockpit-dev-neu` | Omgeving waarin de API-container draait (aan het VNet gekoppeld) |
+| Function App (Flex Consumption) | `func-cockpit-dev-neu` | Webhooks en sync-jobs (aan het VNet gekoppeld) |
+| Application Insights | `appi-cockpit-dev-neu` | Monitoring, gekoppeld aan de gedeelde Log Analytics |
+| User-assigned Managed Identity | `id-cockpit-dev-neu` | De "identiteit" van je apps; krijgt rechten op Key Vault, Storage en Service Bus |
 
 ### Stap 2.4 Bestandsstructuur
 
@@ -270,9 +270,9 @@ infra/bicep/
 
 Dit is precies het soort werk waar Claude Code goed in is. Geef in Claude Code deze opdracht (kopieer letterlijk):
 
-> Maak in infra/bicep de bestanden zoals beschreven in stap 2.4 van docs/handleiding-week1.md. Eisen: (1) alle namen volgen {type}-cockpit-{env}-{weu} met env als parameter; (2) network.bicep maakt een VNet 10.10.0.0/16 met subnets snet-apps (10.10.1.0/24, gedelegeerd aan Microsoft.App/environments), snet-functions (10.10.2.0/24, gedelegeerd aan Microsoft.App/environments) en snet-data (10.10.3.0/24), een Standard static Public IP en een NAT Gateway die aan snet-apps en snet-functions hangt, en geeft het publieke IP als output; (3) postgres.bicep maakt een Flexible Server versie 16, Burstable B2s, met Entra-authenticatie aan en wachtwoordauthenticatie uit, publieke toegang aan met een firewallregel voor het NAT-IP; (4) keyvault.bicep gebruikt RBAC-autorisatie en geeft de managed identity de rol Key Vault Secrets User; (5) storage.bicep maakt drie blob-containers en een lifecycle-regel die de container audio na 30 dagen leegt; (6) servicebus.bicep maakt drie topics; (7) containerapps-env.bicep en functions.bicep koppelen aan het VNet en aan App Insights; (8) main.bicep neemt env, location en het shared Log Analytics-id als parameter en roept alle modules aan; (9) dev.bicepparam vult env='dev'. Gebruik de nieuwste stabiele API-versies. Voeg bovenaan elk bestand een comment van één regel toe wat het doet.
+> Maak in infra/bicep de bestanden zoals beschreven in stap 2.4 van docs/handleiding-week1.md. Eisen: (1) alle namen volgen {type}-cockpit-{env}-{neu} met env als parameter; (2) network.bicep maakt een VNet 10.10.0.0/16 met subnets snet-apps (10.10.1.0/24, gedelegeerd aan Microsoft.App/environments), snet-functions (10.10.2.0/24, gedelegeerd aan Microsoft.App/environments) en snet-data (10.10.3.0/24), een Standard static Public IP en een NAT Gateway die aan snet-apps en snet-functions hangt, en geeft het publieke IP als output; (3) postgres.bicep maakt een Flexible Server versie 16, Burstable B2s, met Entra-authenticatie aan en wachtwoordauthenticatie uit, publieke toegang aan met een firewallregel voor het NAT-IP; (4) keyvault.bicep gebruikt RBAC-autorisatie en geeft de managed identity de rol Key Vault Secrets User; (5) storage.bicep maakt drie blob-containers en een lifecycle-regel die de container audio na 30 dagen leegt; (6) servicebus.bicep maakt drie topics; (7) containerapps-env.bicep en functions.bicep koppelen aan het VNet en aan App Insights; (8) main.bicep neemt env, location en het shared Log Analytics-id als parameter en roept alle modules aan; (9) dev.bicepparam vult env='dev'. Gebruik de nieuwste stabiele API-versies. Voeg bovenaan elk bestand een comment van één regel toe wat het doet.
 
-Lees daarna wat Claude Code heeft gemaakt. Je hoeft niet elke regel te begrijpen; controleer wel: staan alle namen goed, staat de regio op westeurope, zit er nergens een wachtwoord in.
+Lees daarna wat Claude Code heeft gemaakt. Je hoeft niet elke regel te begrijpen; controleer wel: staan alle namen goed, staat de regio op northeurope, zit er nergens een wachtwoord in.
 
 Ter oriëntatie, zo ziet het netwerkdeel er ongeveer uit (Claude Code maakt de volledige versie):
 
@@ -282,14 +282,14 @@ param env string
 param location string = resourceGroup().location
 
 resource pip 'Microsoft.Network/publicIPAddresses@2023-11-01' = {
-  name: 'pip-nat-cockpit-${env}-weu'
+  name: 'pip-nat-cockpit-${env}-neu'
   location: location
   sku: { name: 'Standard' }
   properties: { publicIPAllocationMethod: 'Static' }
 }
 
 resource nat 'Microsoft.Network/natGateways@2023-11-01' = {
-  name: 'nat-cockpit-${env}-weu'
+  name: 'nat-cockpit-${env}-neu'
   location: location
   sku: { name: 'Standard' }
   properties: { publicIpAddresses: [ { id: pip.id } ] }
@@ -304,7 +304,7 @@ Bicep heeft een "what-if": het laat zien wat er zou gebeuren.
 
 ```
 az bicep build --file infra/bicep/main.bicep
-az deployment group what-if -g rg-cockpit-dev-weu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
+az deployment group what-if -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
 ```
 
 Foutmeldingen in deze stap plak je terug in Claude Code: "Los deze what-if-fout op: ...". Herhaal tot what-if een nette lijst met "+ Create"-regels geeft.
@@ -313,20 +313,22 @@ Foutmeldingen in deze stap plak je terug in Claude Code: "Los deze what-if-fout 
 
 Eerst shared, dan dev:
 ```
-az deployment group create -g rg-cockpit-shared-weu -f infra/bicep/shared.bicep
-az deployment group create -g rg-cockpit-dev-weu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
+az deployment group create -g rg-cockpit-shared-neu -f infra/bicep/shared.bicep
+az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
 ```
 Dit duurt 10–20 minuten (Postgres en de Container Apps Environment zijn traag).
 
 ### Stap 2.8 Controle en het vaste IP noteren
 
 ```
-az resource list -g rg-cockpit-dev-weu --output table
-az network public-ip show -g rg-cockpit-dev-weu -n pip-nat-cockpit-dev-weu --query ipAddress -o tsv
+az resource list -g rg-cockpit-dev-neu --output table
+az network public-ip show -g rg-cockpit-dev-neu -n pip-nat-cockpit-dev-neu --query ipAddress -o tsv
 ```
 Het IP-adres dat de tweede opdracht teruggeeft, is het adres dat je in deel 4 bij Realworks whitelist. Schrijf het op in `docs/runbooks/realworks-koppeling.md`.
 
 Extra controle: portal → Key Vault → "Access control (IAM)": de managed identity heeft de rol Key Vault Secrets User.
+
+**Kosten besparen.** De NAT Gateway kost ongeveer € 28 per maand zolang hij bestaat. In `infra/bicep/dev.bicepparam` staat hij via `natGatewayEnabled` uit tot er iets in Azure draait dat Realworks aanroept; het publieke IP en dus het gewhiteliste adres blijven altijd bestaan. Werk je een tijd niet aan het project, draai dan `infra/scripts/dev-uit.sh` (Postgres stoppen, NAT Gateway weg). `infra/scripts/dev-aan.sh` zet alles weer aan en deployt de Bicep opnieuw. Azure start een gestopte Postgres na 7 dagen zelf weer op, en een gestopte server accepteert geen deploy: draai dev-aan.sh vóór je deployt.
 
 ### Stap 2.9 Commit
 
@@ -357,13 +359,13 @@ APP_ID=<plak appId hier>
 az ad sp create --id $APP_ID
 SP_OBJECT_ID=$(az ad sp show --id $APP_ID --query id -o tsv)
 SUB_ID=$(az account show --query id -o tsv)
-az role assignment create --role Contributor --assignee-object-id $SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope /subscriptions/$SUB_ID/resourceGroups/rg-cockpit-dev-weu
-az role assignment create --role Contributor --assignee-object-id $SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope /subscriptions/$SUB_ID/resourceGroups/rg-cockpit-shared-weu
+az role assignment create --role Contributor --assignee-object-id $SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope /subscriptions/$SUB_ID/resourceGroups/rg-cockpit-dev-neu
+az role assignment create --role Contributor --assignee-object-id $SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope /subscriptions/$SUB_ID/resourceGroups/rg-cockpit-shared-neu
 ```
 
 Omdat Bicep ook rolopdrachten maakt (managed identity → Key Vault) heeft de service principal ook "User Access Administrator" nodig op de dev-groep:
 ```
-az role assignment create --role "User Access Administrator" --assignee-object-id $SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope /subscriptions/$SUB_ID/resourceGroups/rg-cockpit-dev-weu
+az role assignment create --role "User Access Administrator" --assignee-object-id $SP_OBJECT_ID --assignee-principal-type ServicePrincipal --scope /subscriptions/$SUB_ID/resourceGroups/rg-cockpit-dev-neu
 ```
 
 ### Stap 3.2 Federated credential toevoegen
@@ -446,14 +448,14 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       - name: What-if
-        run: az deployment group what-if -g rg-cockpit-dev-weu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
+        run: az deployment group what-if -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
       - name: Deploy
-        run: az deployment group create -g rg-cockpit-dev-weu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
+        run: az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
 ```
 
 `permissions: id-token: write` is de regel die OIDC mogelijk maakt; `environment: dev` moet overeenkomen met de `subject` in de federated credential.
 
-Het deployen van de applicaties zelf (containers bouwen, pushen naar de registry, Container App bijwerken) voeg je in week 2 toe zodra er een app is. Vraag dan aan Claude Code: "Breid deploy-dev.yml uit met een job die apps/api bouwt naar crcockpitweu en de Container App bijwerkt."
+Het deployen van de applicaties zelf (containers bouwen, pushen naar de registry, Container App bijwerken) voeg je in week 2 toe zodra er een app is. Vraag dan aan Claude Code: "Breid deploy-dev.yml uit met een job die apps/api bouwt naar crcockpitneu en de Container App bijwerkt."
 
 ### Stap 3.6 Testen
 
@@ -497,8 +499,8 @@ Zodra C&R heeft gekoppeld:
 
 Het token op het Dashboard is het wachtwoord van deze koppeling. Zet het direct in Key Vault en nergens anders:
 ```
-az keyvault secret set --vault-name kv-cockpit-dev-weu --name tenant-cr-realworks-token --value "<token>"
-az keyvault secret set --vault-name kv-cockpit-dev-weu --name tenant-cr-realworks-afdeling --value "<afdelingscode>"
+az keyvault secret set --vault-name kv-cockpit-dev-neu-01 --name tenant-cr-realworks-token --value "<token>"
+az keyvault secret set --vault-name kv-cockpit-dev-neu-01 --name tenant-cr-realworks-afdeling --value "<afdelingscode>"
 ```
 Geef jezelf tijdelijk de rol Key Vault Secrets Officer op de vault als dit commando "Forbidden" geeft.
 
@@ -506,7 +508,7 @@ Geef jezelf tijdelijk de rol Key Vault Secrets Officer op de vault als dit comma
 
 Vanuit de devcontainer (laptop-IP is gewhitelist):
 ```
-TOKEN=$(az keyvault secret show --vault-name kv-cockpit-dev-weu --name tenant-cr-realworks-token --query value -o tsv)
+TOKEN=$(az keyvault secret show --vault-name kv-cockpit-dev-neu-01 --name tenant-cr-realworks-token --query value -o tsv)
 curl -s -H "Authorization: rwauth $TOKEN" "https://api.realworks.nl/wonen/v3/objecten" | head -c 800
 ```
 De exacte basis-URL en het pad staan in de developer-portal onder APIs; pas aan als het afwijkt. Krijg je 401, controleer dan het `rwauth`-voorvoegsel en de spatie. Krijg je een lege lijst, dan is de vrijgave bij C&R nog niet ingesteld.

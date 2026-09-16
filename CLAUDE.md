@@ -26,4 +26,5 @@ Infra in Bicep (infra/bicep). CI/CD via GitHub Actions.
 
 ## Commando's
 npm install · npm run lint · npm run typecheck · npm run test
-Infra dev: az deployment group create -g rg-cockpit-dev-weu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
+Infra dev: az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
+Dev zuinig / aan: infra/scripts/dev-uit.sh · infra/scripts/dev-aan.sh (NAT Gateway via natGatewayEnabled in dev.bicepparam)
