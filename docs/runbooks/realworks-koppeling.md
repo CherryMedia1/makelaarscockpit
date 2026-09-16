@@ -32,6 +32,6 @@ Tijdelijk laptop-IP voor testen vanuit de devcontainer: toevoegen in stap 4.3, v
 
 | Wat | Waarde |
 |---|---|
-| Developer ID | _invullen na registratie (stap 4.1)_ |
+| Developer ID | `8d3ffc0d-825c-42e9-a65a-bebb3e4a142c` (geregistreerd 2026-09-16) |
 | Afdelingscode(s) C&R | _invullen na antwoord Realworks (stap 4.2)_ |
 | Test-API beschikbaar? | _invullen_ |
