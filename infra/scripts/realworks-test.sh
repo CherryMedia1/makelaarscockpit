@@ -1,17 +1,19 @@
 #!/usr/bin/env bash
 # Eerste handmatige call naar Realworks met het token uit Key Vault (stap 4.5).
-# Gebruik: infra/scripts/realworks-test.sh [tenant] [pad]   bv. realworks-test.sh cr /wonen/v3/objecten
-# Het token wordt gekozen op het eerste padsegment (wonen, relaties, taken, agenda).
+# Gebruik: infra/scripts/realworks-test.sh [tenant] [pad] [host]   bv. realworks-test.sh cr /wonen/v3/objecten
+# Token: eerst tenant-<tenant>-realworks-token-<api> (api = eerste padsegment), anders tenant-<tenant>-realworks-token.
+# Host: standaard api.realworks.nl; voor de testomgeving devapi-test.realworks.nl als derde argument.
 # Vereist: het IP van waaruit je dit draait staat bij Realworks op de whitelist.
 set -euo pipefail
 
 KV="kv-cockpit-dev-neu-01"
 TENANT="${1:-cr}"
 PAD="${2:-/wonen/v3/objecten}"
-BASIS="https://api.realworks.nl"
+BASIS="https://${3:-api.realworks.nl}"
 
 API=$(echo "$PAD" | cut -d/ -f2)
-TOKEN=$(az keyvault secret show --vault-name "$KV" --name "tenant-$TENANT-realworks-token-$API" --query value -o tsv | tr -d '\r')
+TOKEN=$(az keyvault secret show --vault-name "$KV" --name "tenant-$TENANT-realworks-token-$API" --query value -o tsv 2>/dev/null | tr -d '\r' || true)
+[[ -n "$TOKEN" ]] || TOKEN=$(az keyvault secret show --vault-name "$KV" --name "tenant-$TENANT-realworks-token" --query value -o tsv | tr -d '\r')
 echo "GET $BASIS$PAD (tenant $TENANT, vanaf IP $(curl -s --max-time 10 https://api.ipify.org || echo onbekend))"
 code=$(curl -s -o /tmp/realworks-antwoord.json -w "%{http_code}" -H "Authorization: rwauth $TOKEN" -H "Accept: application/json" "$BASIS$PAD")
 echo "HTTP $code"

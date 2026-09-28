@@ -9,6 +9,11 @@ param regionShort = 'neu'
 // dat Realworks aanroept; zet op true zodra Functions of API in Azure draaien. Het publieke IP blijft altijd bestaan.
 param natGatewayEnabled = false
 
+// Ontwikkel-VM (docs/handleiding-dev-vm.md). Zet devVmEnabled én natGatewayEnabled op true en plak je openbare SSH-sleutel.
+param devVmEnabled = false
+param devVmAdminUsername = 'tim'
+param devVmSshPublicKey = ''
+
 // Menselijke beheerder in dev: Entra-beheerder op Postgres en Key Vault Secrets Officer.
 // Zet beide op '' als je dat niet wilt; de apps werken via de managed identity.
 param adminObjectId = '5ea0a0fb-3469-4a13-b138-fff365379ce7'

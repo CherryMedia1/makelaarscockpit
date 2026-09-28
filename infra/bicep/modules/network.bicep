@@ -85,6 +85,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2025-09-01' = {
         name: 'snet-data'
         properties: {
           addressPrefix: '10.10.3.0/24'
+          natGateway: natGatewayEnabled ? { id: nat.id } : null
         }
       }
     ]

@@ -23,6 +23,15 @@ param adminPrincipalName string = ''
 @description('Maak de NAT Gateway aan (uurkosten). Op false blijft het vaste publieke IP bestaan, maar loopt uitgaand verkeer niet via dat adres. Zet op true zodra Functions of API in Azure Realworks aanroepen.')
 param natGatewayEnabled bool = true
 
+@description('Maak de ontwikkel-VM aan (zie docs/handleiding-dev-vm.md). Vereist natGatewayEnabled=true om via het vaste IP naar buiten te gaan.')
+param devVmEnabled bool = false
+
+@description('Beheerdersnaam op de ontwikkel-VM.')
+param devVmAdminUsername string = 'tim'
+
+@description('Openbare SSH-sleutel voor de ontwikkel-VM (inhoud van ~/.ssh/id_ed25519.pub). Verplicht als devVmEnabled=true.')
+param devVmSshPublicKey string = ''
+
 @description('Tags voor alle resources.')
 param tags object = {
   project: 'makelaarscockpit'
@@ -138,6 +147,20 @@ module functions 'modules/functions.bicep' = {
   }
 }
 
+module devVm 'modules/devvm.bicep' = if (devVmEnabled) {
+  name: '${env}-devvm'
+  params: {
+    env: env
+    regionShort: regionShort
+    location: location
+    tags: tags
+    subnetId: network.outputs.dataSubnetId
+    identityId: identity.outputs.identityId
+    adminUsername: devVmAdminUsername
+    sshPublicKey: devVmSshPublicKey
+  }
+}
+
 @description('Vast uitgaand IP-adres; dit adres whitelist je bij Realworks (stap 2.8 en 4.3).')
 output natPublicIp string = network.outputs.natPublicIp
 output keyVaultName string = keyVault.outputs.keyVaultName
@@ -147,3 +170,4 @@ output postgresFqdn string = postgres.outputs.postgresFqdn
 output containerAppsEnvironmentId string = containerAppsEnv.outputs.containerAppsEnvironmentId
 output functionAppHostName string = functions.outputs.functionAppHostName
 output identityClientId string = identity.outputs.clientId
+output devVmSshCommand string = devVmEnabled ? devVm!.outputs.sshCommand : ''

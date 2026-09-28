@@ -23,6 +23,13 @@ else
   echo "overgeslagen (status: ${state:-niet gevonden})"
 fi
 
+echo "== Ontwikkel-VM starten (vm-cockpit-dev-neu) =="
+if az vm show -g "$RG" -n "vm-cockpit-dev-neu" --output none 2>/dev/null; then
+  az vm start -g "$RG" -n "vm-cockpit-dev-neu" --output none && echo "gestart"
+else
+  echo "overgeslagen (bestaat niet)"
+fi
+
 echo "== Bicep deployen ($RG) =="
 cd "$BICEP"
 az deployment group create -g "$RG" -f main.bicep -p dev.bicepparam --query "properties.provisioningState" -o tsv | tr -d '\r'

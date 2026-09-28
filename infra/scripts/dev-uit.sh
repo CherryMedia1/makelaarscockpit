@@ -36,4 +36,11 @@ else
   echo "overgeslagen (bestaat niet)"
 fi
 
+echo "== Ontwikkel-VM dealloceren (vm-cockpit-dev-neu) =="
+if az vm show -g "$RG" -n "vm-cockpit-dev-neu" --output none 2>/dev/null; then
+  az vm deallocate -g "$RG" -n "vm-cockpit-dev-neu" --output none && echo "gedealloceerd (alleen de schijf kost nog iets)"
+else
+  echo "overgeslagen (bestaat niet)"
+fi
+
 echo "Klaar. Wat doorloopt: Postgres-opslag, publiek IP, Service Bus en Container Registry, samen ongeveer € 20 per maand."
