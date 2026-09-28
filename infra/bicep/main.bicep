@@ -33,7 +33,7 @@ param devVmAdminUsername string = 'tim'
 param devVmSshPublicKey string = ''
 
 @description('VM-maat van de ontwikkel-VM; moet binnen het vCPU-quotum van de familie vallen.')
-param devVmSize string = 'Standard_B2s'
+param devVmSize string = 'Standard_D2as_v5'
 
 @description('Tags voor alle resources.')
 param tags object = {

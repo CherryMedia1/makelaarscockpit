@@ -13,6 +13,7 @@ param natGatewayEnabled = false
 param devVmEnabled = false
 param devVmAdminUsername = 'tim'
 param devVmSshPublicKey = ''
+param devVmSize = 'Standard_D2as_v5'
 
 // Menselijke beheerder in dev: Entra-beheerder op Postgres en Key Vault Secrets Officer.
 // Zet beide op '' als je dat niet wilt; de apps werken via de managed identity.

@@ -4,24 +4,32 @@ Doel: alles wat je richting Realworks doet, komt van het vaste adres 134.149.33.
 
 De bestanden staan al klaar: `infra/bicep/modules/devvm.bicep` (VM, netwerkkaart, publiek IP voor SSH, NSG met alleen poort 22), schakelaars in `infra/bicep/dev.bicepparam`, `infra/scripts/devvm-setup.sh` (eenmalige inrichting op de VM) en aanpassingen in `dev-uit.sh` / `dev-aan.sh` (VM mee uit en aan).
 
-Kosten als alles aan staat: VM ongeveer € 25 tot € 30 per maand (B-serie, 2 vCPU, 4 GiB), publiek IP € 3, NAT Gateway € 28. Met `dev-uit.sh` blijft daar ongeveer € 1 (schijf) plus het IP van over.
+Kosten als alles aan staat: VM ongeveer € 60 per maand (D2as_v5, 2 vCPU, 8 GiB; goedkopere B-maten weigert Azure voor deze subscription), publiek IP € 3, NAT Gateway € 28. Met `dev-uit.sh` blijft daar ongeveer € 3 (schijf) plus het IP van over, dus dealloceer de VM als je niet werkt.
 
 ---
 
-## Stap 1 – vCPU-quota aanvragen via een supportticket (eenmalig, eerst doen)
+## Stap 1 – vCPU-quota aanvragen (eenmalig, eerst doen)
 
-Nieuwe subscriptions hebben nul vCPU-quota. Voor deze subscription is dat op 2026-09-28 gecontroleerd: de VM-maat B2als_v2 hoort bij de familie **standardBasv2Family**, het quotum staat op **0**, en een automatische verhoging via de quota-API wordt geweigerd met "ContactSupport". Het moet dus via een gratis supportticket.
+Gecontroleerd op 2026-09-28 voor subscription cockpit-dev in North Europe:
+
+| Familie | Maten | Situatie |
+|---|---|---|
+| standardBSFamily (B1ms, B2s, B2ms, B4ms) | goedkoopst | quotum 10, maar **capaciteitsrestrictie**: Azure weigert elke maat ("SkuNotAvailable") |
+| standardBasv2Family (B2als_v2) | goedkoop | quotum 0, automatische verhoging geweigerd ("ContactSupport") |
+| standardDASv5Family (D2as_v5, 2 vCPU, 8 GiB) | ± € 60 per maand aan, € 0 gedealloceerd | quotum 0, alleen quotumfout: **dit aanvragen** |
+
+De VM-maat staat daarom op `Standard_D2as_v5` (`devVmSize` in `infra/bicep/dev.bicepparam`). Omdat je de VM met `dev-uit.sh` dealloceert als je niet werkt, betaal je alleen de uren dat hij aan staat (€ 0,08 per uur).
 
 1. Portal → "Help + support" → "Create a support request".
 2. Issue type: **Service and subscription limits (quotas)**. Subscription: cockpit-dev. Quota type: **Compute-VM (cores-vCPUs) subscription limit increases**.
-3. "Enter details" → Deployment model Resource Manager → regio **North Europe** → familie **Standard Basv2 Family vCPUs** → nieuwe limiet **4**. Voeg ook **Total Regional vCPUs** toe met **4**.
-4. Severity C (minimal), contact per e-mail. Verzenden. Doorlooptijd meestal enkele uren tot een werkdag. Wordt de aanvraag afgewezen omdat de subscription nieuw is, vraag dan om **Standard BS Family vCPUs** (B2s) of **Standard Dasv5 Family vCPUs** (D2as_v5) en pas `vmSize` aan in `infra/bicep/modules/devvm.bicep`.
+3. "Enter details" → Deployment model Resource Manager → regio **North Europe** → familie **Standard DASv5 Family vCPUs** → nieuwe limiet **4**. Het regionale totaal (Total Regional vCPUs) staat al op 4.
+4. Severity C (minimal), contact per e-mail. Verzenden. Doorlooptijd meestal enkele uren tot een werkdag.
 
 Controle zodra het ticket is afgehandeld:
 ```
-az vm list-usage -l northeurope --query "[?name.value=='standardBasv2Family' || name.value=='cores'].{familie:name.value, limiet:limit}" -o table
+az vm list-usage -l northeurope --query "[?name.value=='standardDASv5Family' || name.value=='cores'].{familie:name.value, limiet:limit}" -o table
 ```
-Beide limieten moeten 4 (of hoger) tonen. Daarna kun je verder met stap 2.
+Beide limieten moeten 4 tonen. Daarna kun je verder met stap 2.
 
 ## Stap 2 – SSH-sleutel maken
 
@@ -56,7 +64,7 @@ De what-if moet "+ Create" tonen voor de NAT Gateway, het VM-IP, de NSG, de netw
 ```
 az deployment group show -g rg-cockpit-dev-neu -n main --query properties.outputs.devVmSshCommand.value -o tsv
 ```
-Foutmelding met "SKU" of "quota": stap 1 is nog niet verwerkt.
+Foutmelding met "QuotaExceeded": stap 1 is nog niet verwerkt. "SkuNotAvailable": die maat weigert Azure voor deze subscription; kies een andere in `devVmSize`.
 
 ## Stap 5 – Eerste keer inloggen en inrichten
 

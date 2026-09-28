@@ -18,8 +18,8 @@ param adminUsername string = 'tim'
 @description('Openbare SSH-sleutel, de inhoud van ~/.ssh/id_ed25519.pub. Geen wachtwoordlogin.')
 param sshPublicKey string
 
-@description('VM-maat. Standard_B2s = 2 vCPU, 4 GiB (familie standardBSFamily, quotum aanwezig): genoeg voor VS Code Remote en Claude Code.')
-param vmSize string = 'Standard_B2s'
+@description('VM-maat. Standard_D2as_v5 = 2 vCPU, 8 GiB (familie standardDASv5Family); de B-serie weigert Azure voor deze subscription.')
+param vmSize string = 'Standard_D2as_v5'
 
 var vmName = 'vm-cockpit-${env}-${regionShort}'
 
