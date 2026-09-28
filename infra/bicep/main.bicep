@@ -32,6 +32,9 @@ param devVmAdminUsername string = 'tim'
 @description('Openbare SSH-sleutel voor de ontwikkel-VM (inhoud van ~/.ssh/id_ed25519.pub). Verplicht als devVmEnabled=true.')
 param devVmSshPublicKey string = ''
 
+@description('VM-maat van de ontwikkel-VM; moet binnen het vCPU-quotum van de familie vallen.')
+param devVmSize string = 'Standard_B2s'
+
 @description('Tags voor alle resources.')
 param tags object = {
   project: 'makelaarscockpit'
@@ -158,6 +161,7 @@ module devVm 'modules/devvm.bicep' = if (devVmEnabled) {
     identityId: identity.outputs.identityId
     adminUsername: devVmAdminUsername
     sshPublicKey: devVmSshPublicKey
+    vmSize: devVmSize
   }
 }
 
