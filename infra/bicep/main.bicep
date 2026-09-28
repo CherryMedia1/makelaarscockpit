@@ -35,6 +35,9 @@ param devVmSshPublicKey string = ''
 @description('VM-maat van de ontwikkel-VM; moet binnen het vCPU-quotum van de familie vallen.')
 param devVmSize string = 'Standard_D2as_v5'
 
+@description('Maak de toolbox-container aan (zie docs/handleiding-toolbox-container.md): shell vanaf het vaste NAT-IP zonder VM. Vereist natGatewayEnabled=true.')
+param toolboxEnabled bool = false
+
 @description('Tags voor alle resources.')
 param tags object = {
   project: 'makelaarscockpit'
@@ -162,6 +165,20 @@ module devVm 'modules/devvm.bicep' = if (devVmEnabled) {
     adminUsername: devVmAdminUsername
     sshPublicKey: devVmSshPublicKey
     vmSize: devVmSize
+  }
+}
+
+module toolbox 'modules/toolbox.bicep' = if (toolboxEnabled) {
+  name: '${env}-toolbox'
+  params: {
+    env: env
+    regionShort: regionShort
+    location: location
+    tags: tags
+    containerAppsEnvironmentId: containerAppsEnv.outputs.containerAppsEnvironmentId
+    identityId: identity.outputs.identityId
+    identityClientId: identity.outputs.clientId
+    keyVaultName: keyVault.outputs.keyVaultName
   }
 }
 

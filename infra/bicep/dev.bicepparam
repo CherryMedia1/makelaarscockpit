@@ -7,13 +7,16 @@ param regionShort = 'neu'
 
 // De NAT Gateway kost ongeveer € 28 per maand zolang hij bestaat. In week 1 en 2 draait er nog niets in Azure
 // dat Realworks aanroept; zet op true zodra Functions of API in Azure draaien. Het publieke IP blijft altijd bestaan.
-param natGatewayEnabled = false
+param natGatewayEnabled = true
 
 // Ontwikkel-VM (docs/handleiding-dev-vm.md). Zet devVmEnabled én natGatewayEnabled op true en plak je openbare SSH-sleutel.
 param devVmEnabled = false
 param devVmAdminUsername = 'tim'
 param devVmSshPublicKey = ''
 param devVmSize = 'Standard_D2as_v5'
+
+// Toolbox-container (docs/handleiding-toolbox-container.md): shell vanaf het vaste IP, standaard 0 replica's.
+param toolboxEnabled = true
 
 // Menselijke beheerder in dev: Entra-beheerder op Postgres en Key Vault Secrets Officer.
 // Zet beide op '' als je dat niet wilt; de apps werken via de managed identity.
