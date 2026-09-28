@@ -27,11 +27,18 @@ fi
 
 echo "== NAT Gateway loskoppelen en verwijderen ($NAT) =="
 if az network nat gateway show -g "$RG" -n "$NAT" --output none 2>/dev/null; then
-  for snet in snet-apps snet-functions; do
+  for snet in snet-apps snet-functions snet-data; do
     az network vnet subnet update -g "$RG" --vnet-name "$VNET" -n "$snet" --remove natGateway --output none
   done
   az network nat gateway delete -g "$RG" -n "$NAT"
   echo "verwijderd"
+else
+  echo "overgeslagen (bestaat niet)"
+fi
+
+echo "== Toolbox-container naar 0 replica's (ca-toolbox-cockpit-dev-neu) =="
+if az containerapp show -g "$RG" -n "ca-toolbox-cockpit-dev-neu" --output none 2>/dev/null; then
+  az containerapp update -g "$RG" -n "ca-toolbox-cockpit-dev-neu" --min-replicas 0 --output none && echo "teruggeschaald"
 else
   echo "overgeslagen (bestaat niet)"
 fi
