@@ -8,6 +8,8 @@ Kosten als alles aan staat: VM ongeveer € 60 per maand (D2as_v5, 2 vCPU, 8 GiB
 
 ---
 
+> **Stand op 2026-09-28: nog niet uitvoerbaar.** Voor subscription cockpit-dev is in North Europe via de Azure-preflight elke VM-maat getest: B-serie (B1ms, B2s, B2ms, B4ms), B2als_v2, D2as_v5, D2s_v5, D2als_v7, D2as_v7, D2ls_v6 en DC2as_v6. Uitkomst: families mét quotum (BS, Dasv7, Dalsv7, Dlsv6: 10 vCPU) krijgen "SkuNotAvailable, Capacity Restrictions"; families zonder restrictie (Dasv5, Dsv5, Basv2, DCasv6) hebben quotum 0 en de automatische verhoging antwoordt "ContactSupport". Een quota-ticket vereist bovendien een supportplan. Tot dit is opgelost: gebruik de toolbox-container (optie B, `docs/handleiding-toolbox-container.md`) om vanaf het vaste IP te werken. Deze handleiding blijft geldig zodra Azure een VM-maat toestaat; controleer dat met de what-if uit stap 4.
+
 ## Stap 1 – vCPU-quota aanvragen (eenmalig, eerst doen)
 
 Gecontroleerd op 2026-09-28 voor subscription cockpit-dev in North Europe:
