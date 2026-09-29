@@ -62,3 +62,5 @@ verzonnen token geven dezelfde 401. Een 404 "Resource not found" betekent verkee
 | dev | Taken, Agenda | `/taken/v1`, `/taken/v3/taken`, `/agenda/v1`, `/agenda/v3/afspraken` | 404: pad opzoeken in de portal |
 
 Het development-token (tenant `dev`) werkt voor alle API's van de C&R-koppeling en is daarmee de eenvoudigste keuze voor fase 1.
+
+Detail: `GET /wonen/v3/objecten/{id}` geeft 404 (2026-09-29); het detailpad staat in de portal. `?aantal=&pagina=` worden geaccepteerd op de lijst.
