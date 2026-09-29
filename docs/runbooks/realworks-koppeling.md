@@ -49,3 +49,16 @@ Tokens per API in Key Vault: `tenant-cr-realworks-token-wonen`, `-relaties`, `-t
 
 Lessen: de header is `Authorization: rwauth <token>`; tokens zijn pas actief na acceptatie van de voorwaarden; een niet-actief token en een
 verzonnen token geven dezelfde 401. Een 404 "Resource not found" betekent verkeerd pad, geen autorisatieprobleem.
+
+## Vanaf het vaste IP via de toolbox (2026-09-29)
+
+`infra/scripts/toolbox.sh` opent een shell in de container; daarin `rw <tenant> <pad>`. Uitgaand IP bevestigd: 134.149.33.214.
+
+| Tenant | API | Pad | Resultaat |
+|---|---|---|---|
+| dev (development-token) | Wonen | `/wonen/v3/objecten?aantal=2` | 200 met echte C&R-objecten: vrijgave staat |
+| cr | Relaties | `/relaties/v1?aantal=2` | 200, nog leeg |
+| cr | Wonen | `/wonen/v3/objecten` | 401: het Wonen-token van 22-09 wordt niet meer geaccepteerd, waarschijnlijk opnieuw gegenereerd; vervangen met `realworks-token-opslaan.sh cr wonen` |
+| dev | Taken, Agenda | `/taken/v1`, `/taken/v3/taken`, `/agenda/v1`, `/agenda/v3/afspraken` | 404: pad opzoeken in de portal |
+
+Het development-token (tenant `dev`) werkt voor alle API's van de C&R-koppeling en is daarmee de eenvoudigste keuze voor fase 1.
