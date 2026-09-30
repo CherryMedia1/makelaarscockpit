@@ -10,12 +10,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@azure/communication-email": "^1.1.0",
+    "@azure/identity": "^4.13.3",
+    "@makelaarscockpit/db": "*",
+    "@makelaarscockpit/domain": "*",
+    "jose": "^6.2.12",
     "lucide-react": "^1.49.0",
     "next": "16.3.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "@makelaarscockpit/db": "*",
-    "@makelaarscockpit/domain": "*",
     "server-only": "^0.0.1"
   },
   "devDependencies": {

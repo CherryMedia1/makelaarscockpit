@@ -153,6 +153,16 @@ module functions 'modules/functions.bicep' = {
   }
 }
 
+module communication 'modules/communication.bicep' = {
+  name: '${env}-communication'
+  params: {
+    env: env
+    regionShort: regionShort
+    tags: tags
+    identityPrincipalId: identity.outputs.principalId
+  }
+}
+
 module devVm 'modules/devvm.bicep' = if (devVmEnabled) {
   name: '${env}-devvm'
   params: {
@@ -192,3 +202,4 @@ output containerAppsEnvironmentId string = containerAppsEnv.outputs.containerApp
 output functionAppHostName string = functions.outputs.functionAppHostName
 output identityClientId string = identity.outputs.clientId
 output devVmSshCommand string = devVmEnabled ? devVm!.outputs.sshCommand : ''
+output mailAfzender string = communication.outputs.afzender

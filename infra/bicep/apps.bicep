@@ -19,7 +19,7 @@ param migratieImage string
 @description('Volledige image-naam van de jobs (sync, import), bv. crcockpitneu.azurecr.io/jobs:<git-sha>.')
 param jobsImage string
 
-@description('Sleutel van de tenant waarvoor het portaal en de jobs draaien, tot de inlog er is (issue #5).')
+@description('Sleutel van de tenant waarvoor de jobs draaien. Het portaal haalt de tenant uit de sessie van de ingelogde gebruiker.')
 param tenantSleutel string = 'cr'
 
 @description('Login-server van de gedeelde Container Registry.')
@@ -41,6 +41,19 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2026-01-01' existin
 
 resource keyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = {
   name: 'kv-cockpit-${env}-${regionShort}-01'
+}
+
+resource communicatie 'Microsoft.Communication/communicationServices@2025-09-01' existing = {
+  name: 'acs-cockpit-${env}-${regionShort}'
+}
+
+resource emailService 'Microsoft.Communication/emailServices@2025-09-01' existing = {
+  name: 'email-cockpit-${env}-${regionShort}'
+}
+
+resource emailDomein 'Microsoft.Communication/emailServices/domains@2025-09-01' existing = {
+  parent: emailService
+  name: 'AzureManagedDomain'
 }
 
 // Databasetoegang met de managed identity (Postgres is Entra-only); gedeeld door het portaal en de jobs.
@@ -107,9 +120,19 @@ resource web 'Microsoft.App/containerApps@2026-01-01' = {
       ]
       secrets: [
         {
-          // Tijdelijke afscherming van de pilot tot de inlog er is (issue #5).
-          name: 'pilot-wachtwoord'
-          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/pilot-wachtwoord'
+          // Sleutel waarmee de sessie-cookies worden versleuteld (ADR-009).
+          name: 'sessie-sleutel'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/web-sessie-sleutel'
+          identity: identity.id
+        }
+        {
+          name: 'microsoft-client-id'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/web-microsoft-client-id'
+          identity: identity.id
+        }
+        {
+          name: 'microsoft-client-secret'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/web-microsoft-client-secret'
           identity: identity.id
         }
       ]
@@ -121,8 +144,29 @@ resource web 'Microsoft.App/containerApps@2026-01-01' = {
           image: webImage
           env: concat(databaseEnv, [
             {
-              name: 'PILOT_WACHTWOORD'
-              secretRef: 'pilot-wachtwoord'
+              name: 'SESSIE_SLEUTEL'
+              secretRef: 'sessie-sleutel'
+            }
+            {
+              name: 'MICROSOFT_CLIENT_ID'
+              secretRef: 'microsoft-client-id'
+            }
+            {
+              name: 'MICROSOFT_CLIENT_SECRET'
+              secretRef: 'microsoft-client-secret'
+            }
+            {
+              // Het publieke adres van het portaal, voor de inloglink in de e-mail en de terugkeer van Microsoft.
+              name: 'PORTAAL_URL'
+              value: 'https://ca-web-cockpit-${env}-${regionShort}.${containerAppsEnv.properties.defaultDomain}'
+            }
+            {
+              name: 'ACS_ENDPOINT'
+              value: 'https://${communicatie.properties.hostName}'
+            }
+            {
+              name: 'MAIL_AFZENDER'
+              value: 'DoNotReply@${emailDomein.properties.mailFromSenderDomain}'
             }
           ])
           resources: {
@@ -229,6 +273,10 @@ var jobs = [
   {
     naam: 'import'
     commando: 'import-verkooplijst'
+  }
+  {
+    naam: 'gebruikers'
+    commando: 'gebruikers-bijwerken'
   }
 ]
 

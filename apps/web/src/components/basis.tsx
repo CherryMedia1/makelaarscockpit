@@ -85,3 +85,14 @@ export function LegeStaat({ icoon: Icoon, titel, children }: { icoon: React.Comp
     </div>
   );
 }
+
+const knopStijl = {
+  primair: "bg-primary text-on-primary hover:bg-primary-hover",
+  secundair: "border-[1.5px] border-primary bg-surface text-primary hover:bg-primary-subtle",
+  ghost: "text-primary hover:bg-primary-subtle",
+} as const;
+
+/** Knop volgens BRAND.md §6: 40px hoog, radius md, Figtree 600. */
+export function knopKlassen(soort: keyof typeof knopStijl = "primair", breed = false): string {
+  return `inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-[15px] font-semibold transition-colors duration-150 ${knopStijl[soort]} ${breed ? "w-full" : ""}`;
+}

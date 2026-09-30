@@ -32,3 +32,7 @@ export async function schrijfBlob(container: string, naam: string, inhoud: strin
     blobHTTPHeaders: { blobContentType: "application/json" },
   });
 }
+
+export async function verwijderBlob(container: string, naam: string): Promise<void> {
+  await blobService().getContainerClient(container).getBlobClient(naam).deleteIfExists();
+}
