@@ -19,8 +19,7 @@ Omgeving: "Productie". Omschrijving: "Azure dev".
 
 ## 2. Tokens (jij, developer-portal)
 
-- Het **development-token** werkt voor alle vier de API's van de C&R-koppeling en geeft echte data. Dit is voor fase 1 het token dat we gebruiken (tenant `dev` in Key Vault).
-- Het Wonen-token van C&R uit de portal van 22 september geeft sinds 29 september 401. Waarschijnlijk is het opnieuw gegenereerd. Zolang het development-token werkt, hoef je hier niets mee; wil je de tokens per API wel actueel houden, zet ze dan opnieuw in Key Vault met `infra/scripts/realworks-token-opslaan.sh cr wonen` (en relaties, taken, agenda).
+- Het dashboard toont vier tokens, elk met een eigen bereik: (1) Makelaars/Wonen/Zoekopdracht, (2) Kenmerken/Makelaars/Relaties, (3) Makelaars/Taken, (4) Makelaars/Agenda. Ze staan per API in Key Vault onder tenant `cr`; zie het runbook. Er is geen apart development-token: wat we zo noemden was token 1.
 - Alle tokens die tot nu toe zijn gebruikt, zijn in een chat geplakt. Genereer ze op een rustig moment opnieuw en zet ze met het script in Key Vault zonder ze ergens te plakken. Het script vraagt het token onzichtbaar.
 
 ## 3. Paden van Taken en Agenda opzoeken (jij, developer-portal, 5 minuten)
@@ -40,10 +39,10 @@ CRM → Marketplace / API-manager, per afgenomen API:
 | Afgenomen API's | Wonen, Relaties, Taken, Agenda | gedaan (tokens bestaan) |
 | Developer ID | `8d3ffc0d-825c-42e9-a65a-bebb3e4a142c` | gedaan |
 | Vrijgave Wonen | basisgegevens + objectgegevens + transactiegegevens + relatiegegevens | staat (objecten komen door) |
-| Vrijgave Relaties | niveau Plus | **controleren**: de lijst is nog leeg |
+| Vrijgave Relaties | niveau Plus | gedaan op 30-09 (data komt door) |
 | Vrijgave Taken en Agenda | 365 dagen terug, 90 dagen vooruit, inzageniveau "Iedereen" | **controleren** zodra de paden bekend zijn |
 | IP-adressen (als dat veld bij C&R staat) | `134.149.33.214/32` | controleren |
-| Afdelingscode(s) | vragen aan Realworks welke gelden voor C&R | **open**; daarna in Key Vault: `realworks-token-opslaan.sh` vraagt erom, of handmatig als `tenant-cr-realworks-afdeling` |
+| Afdelingscode | `935773` | gedaan; staat in Key Vault als `tenant-cr-realworks-afdeling` en is de `bedrijfscode`-parameter in de API |
 
 Werkwijze: wijzig één instelling, zeg in de chat wat je hebt gewijzigd, en laat de bijbehorende call testen vanaf de toolbox. Zo zie je per stap of het effect heeft.
 
@@ -56,4 +55,4 @@ Nog **niet** registreren: er draait nog geen endpoint, en na 25 mislukte poginge
 
 ## Controle na afloop
 
-Vanuit de repo: `infra/scripts/toolbox.sh` en in de shell `rw dev /wonen/v3/objecten?aantal=1` (verwacht 200 met data), `rw dev /relaties/v1?aantal=1` (verwacht 200, met data zodra de vrijgave Relaties goed staat) en de nieuwe paden voor Taken en Agenda.
+Vanuit de repo: `infra/scripts/toolbox.sh` en in de shell `rw multi cr /wonen/v3/objecten?aantal=1 /relaties/v1?aantal=1 /makelaars/v1` (alle drie 200 met data), aangevuld met de nieuwe paden voor Taken en Agenda.

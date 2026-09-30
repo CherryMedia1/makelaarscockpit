@@ -33,7 +33,7 @@ Tijdelijk laptop-IP voor testen vanuit de devcontainer: toevoegen in stap 4.3, v
 | Wat | Waarde |
 |---|---|
 | Developer ID | `8d3ffc0d-825c-42e9-a65a-bebb3e4a142c` (geregistreerd 2026-09-16) |
-| Afdelingscode(s) C&R | _invullen na antwoord Realworks (stap 4.2)_ |
+| Afdelingscode C&R | `935773` (ook in Key Vault als `tenant-cr-realworks-afdeling`) |
 | Test-API beschikbaar? | _invullen_ |
 
 ## Eerste calls (stap 4.5, 2026-09-22)
@@ -64,3 +64,27 @@ verzonnen token geven dezelfde 401. Een 404 "Resource not found" betekent verkee
 Het development-token (tenant `dev`) werkt voor alle API's van de C&R-koppeling en is daarmee de eenvoudigste keuze voor fase 1.
 
 Detail: `GET /wonen/v3/objecten/{id}` geeft 404 (2026-09-29); het detailpad staat in de portal. `?aantal=&pagina=` worden geaccepteerd op de lijst.
+
+## Tokens en paden, stand 2026-09-30
+
+Het developer-dashboard toont vier tokens met elk een eigen bereik. In Key Vault staan ze per API onder tenant `cr` (het eerdere "development-token" bleek het Wonen-token; `tenant-dev-…` is verwijderd).
+
+| Token (dashboard) | API's | Key Vault-secrets |
+|---|---|---|
+| 1 | Makelaars, Wonen, Zoekopdracht | `tenant-cr-realworks-token-wonen`, `-makelaars`, `-zoekopdracht` |
+| 2 | Kenmerken, Makelaars, Relaties | `tenant-cr-realworks-token-relaties`, `-kenmerken` |
+| 3 | Makelaars, Taken | `tenant-cr-realworks-token-taken` |
+| 4 | Makelaars, Agenda | `tenant-cr-realworks-token-agenda` |
+
+Getest vanaf 134.149.33.214 met `rw multi cr <pad> <pad> …` (meerdere paden in één toolbox-sessie; te veel losse exec-sessies geeft 429 van Azure):
+
+| Pad | Resultaat |
+|---|---|
+| `GET /wonen/v3/objecten?aantal=&pagina=` (ook `?bedrijfscode=935773`) | 200 met data |
+| `GET /relaties/v1?aantal=` | 200 met data (vrijgave Relaties staat sinds 30-09) |
+| `GET /relaties/v1/{relatieId}?bedrijfscode=935773` | detail; zonder bedrijfscode 400, id moet integer zijn |
+| `GET /makelaars/v1` | 200, kantoorgegevens |
+| Taken en Agenda | 404 "Resource not found" op alle geprobeerde paden (`/taken/v1`, `/taken/v1/taken`, `/taken/v2/taken`, met en zonder `bedrijfscode`/afdelingscode in het pad; idem agenda): pad uit de portal nodig |
+| Zoekopdracht, Kenmerken | voorvoegsels `/zoekopdracht`, `/zoekopdrachten`, `/kenmerken` bestaan niet (gateway-403); pad uit de portal nodig |
+
+Een 404 met "Resource not found" = het voorvoegsel bestaat maar het pad niet; een 403 `{"message":"Forbidden"}` van de gateway = het voorvoegsel bestaat niet.

@@ -23,10 +23,10 @@ Kosten: de NAT Gateway moet aan staan (€ 28 per maand). De container staat sta
 3. In de shell, eerste keer per sessie:
    ```
    curl -s https://api.ipify.org; echo          # moet 134.149.33.214 geven
-   rw dev /wonen/v3/objecten                    # Realworks-call met het development-token
-   rw cr /relaties/v1                           # C&R-token voor Relaties
+   rw cr /wonen/v3/objecten                     # één call, begin van het antwoord
+   rw multi cr /wonen/v3/objecten?aantal=1 /relaties/v1?aantal=1 /makelaars/v1   # meerdere paden in één keer
    ```
-   `rw [tenant] [pad] [host]`: tenant `dev` gebruikt `tenant-dev-realworks-token`, tenant `cr` de tokens per API. Het commando logt zelf in met de managed identity.
+   `rw [tenant] [pad] [host]` of `rw multi [tenant] pad1 pad2 …`: tenant `cr` gebruikt de tokens per API (eerste padsegment). Het commando logt zelf in met de managed identity.
 4. Klaar? `exit`. Het script stopt de container.
 
 ## Realworks-whitelist
