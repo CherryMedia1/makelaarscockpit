@@ -160,3 +160,7 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+
+# Bronbestanden met klantgegevens (Excel-rapportages e.d.); alleen het README gaat mee
+input/*
+!input/README.md
