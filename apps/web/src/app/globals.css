@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@import "../styles/brand/tokens.css";
+@import "../styles/brand/tailwind-theme.css";
+
+/* Lettertypen worden zelf gehost via next/font/local (zie layout.tsx); de tokens verwijzen daarnaar. */
+:root {
+  --mc-font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --mc-font-body: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Typografieschaal uit BRAND.md §4 als utilities. */
+@utility text-display { font: var(--mc-text-display); letter-spacing: var(--mc-tracking-display); }
+@utility text-h1 { font: var(--mc-text-h1); letter-spacing: var(--mc-tracking-h1); }
+@utility text-h2 { font: var(--mc-text-h2); letter-spacing: var(--mc-tracking-h2); }
+@utility text-h3 { font: var(--mc-text-h3); letter-spacing: var(--mc-tracking-h3); }
+@utility text-h4 { font: var(--mc-text-h4); letter-spacing: var(--mc-tracking-h4); }
+@utility text-kpi { font: var(--mc-text-kpi); letter-spacing: var(--mc-tracking-kpi); font-variant-numeric: tabular-nums; }
+@utility text-body-lg { font: var(--mc-text-body-lg); }
+@utility text-body { font: var(--mc-text-body); }
+@utility text-body-sm { font: var(--mc-text-body-sm); }
+@utility text-label { font: var(--mc-text-label); }
+@utility text-caption { font: var(--mc-text-caption); letter-spacing: var(--mc-tracking-caption); }
+@utility text-overline { font: var(--mc-text-overline); letter-spacing: var(--mc-tracking-overline); text-transform: uppercase; }
+
+:focus-visible {
+  outline: 2px solid var(--mc-color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

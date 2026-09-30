@@ -1,0 +1,35 @@
+name: deploy-apps-dev
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['apps/web/**', 'packages/**', 'infra/bicep/apps.bicep', 'package-lock.json', '.github/workflows/deploy-apps-dev.yml']
+permissions:
+  id-token: write
+  contents: read
+concurrency:
+  group: deploy-apps-dev
+  cancel-in-progress: false
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      REGISTRY: crcockpitneu
+      IMAGE: crcockpitneu.azurecr.io/web:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Image bouwen en pushen
+        run: |
+          az acr login --name "$REGISTRY"
+          docker build -f apps/web/Dockerfile -t "$IMAGE" .
+          docker push "$IMAGE"
+      - name: Applicatielaag deployen
+        run: |
+          az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/apps.bicep \
+            -p env=dev webImage="$IMAGE" --query properties.outputs.webUrl.value -o tsv

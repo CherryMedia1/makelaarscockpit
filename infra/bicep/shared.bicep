@@ -40,5 +40,22 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2025-11-01' =
   }
 }
 
+@description('Principal-id\'s van managed identities die images mogen ophalen (AcrPull), bv. de identity van dev. Handmatig meegeven bij de shared-deploy.')
+param acrPullPrincipalIds array = []
+
+var acrPullRoleId = '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+
+resource acrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = [
+  for principalId in acrPullPrincipalIds: {
+    name: guid(containerRegistry.id, principalId, acrPullRoleId)
+    scope: containerRegistry
+    properties: {
+      roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrPullRoleId)
+      principalId: principalId
+      principalType: 'ServicePrincipal'
+    }
+  }
+]
+
 output logAnalyticsWorkspaceId string = logAnalytics.id
 output containerRegistryLoginServer string = containerRegistry.properties.loginServer
