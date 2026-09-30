@@ -1,20 +1,13 @@
-// Gegevenstoegang voor het portaal (alleen op de server). Tot de inlog er is (issue #5) is de tenant vast: TENANT_SLEUTEL.
+// Gegevenstoegang voor het portaal (alleen op de server): altijd binnen de tenant van de ingelogde medewerker.
 import "server-only";
-import { maakDb, metTenant, zoekTenant, type Db, type Tenant, type Tx } from "@makelaarscockpit/db";
+import { metTenant, type Tx } from "@makelaarscockpit/db";
+import { db } from "./gegevens-basis";
+import { vereisSessie, type Sessie } from "./inlog/sessie";
 
-const globaal = globalThis as unknown as { cockpitDb?: Db };
+export { heeftDatabase } from "./gegevens-basis";
 
-export const heeftDatabase = () => Boolean(process.env.PGHOST);
-
-function db(): Db {
-  return (globaal.cockpitDb ??= maakDb());
-}
-
-export async function huidigeTenant(): Promise<Tenant> {
-  return zoekTenant(db(), process.env.TENANT_SLEUTEL ?? "cr");
-}
-
-export async function metHuidigeTenant<T>(werk: (tx: Tx, tenant: Tenant) => Promise<T>): Promise<T> {
-  const tenant = await huidigeTenant();
-  return metTenant(db(), tenant.id, (tx) => werk(tx, tenant));
+/** Voert `werk` uit binnen de tenant uit de sessie; de tenant komt nooit uit de URL of uit invoer. */
+export async function metHuidigeTenant<T>(werk: (tx: Tx, sessie: Sessie) => Promise<T>): Promise<T> {
+  const sessie = await vereisSessie();
+  return metTenant(db(), sessie.tenantId, (tx) => werk(tx, sessie));
 }

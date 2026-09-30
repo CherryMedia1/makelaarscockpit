@@ -77,9 +77,9 @@ export async function haalVerkoopDashboard(): Promise<VerkoopDashboard> {
   await connection();
   if (!heeftDatabase()) return voorbeeld();
   const nu = vandaagInNederland();
-  const { regels, doelen } = await metHuidigeTenant(async (tx, tenant) => ({
-    regels: await leesVerkoopregels(tx, tenant.id, nu.jaar - 1),
-    doelen: await leesOmzetdoelen(tx, tenant.id, nu.jaar),
+  const { regels, doelen } = await metHuidigeTenant(async (tx, sessie) => ({
+    regels: await leesVerkoopregels(tx, sessie.tenantId, nu.jaar - 1),
+    doelen: await leesOmzetdoelen(tx, sessie.tenantId, nu.jaar),
   }));
   const cijfers = verkoopDashboard({ regels, doelen, jaar: nu.jaar, totEnMetMaand: nu.maand });
   return {
