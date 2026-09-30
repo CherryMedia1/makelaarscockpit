@@ -1,4 +1,4 @@
-// Storage-account met blob-containers raw-realworks, documents en audio; audio wordt na 30 dagen automatisch verwijderd
+// Storage-account met blob-containers raw-realworks, documents, audio en import; audio wordt na 30 dagen automatisch verwijderd
 param env string
 
 @description('Korte regiocode in alle resourcenamen, bv. neu (North Europe).')
@@ -13,6 +13,8 @@ var containerNames = [
   'raw-realworks'
   'documents'
   'audio'
+  // Eenmalige bronbestanden voor import, zoals de Excel-historie (ADR-007); bevat persoonsgegevens, dus privé.
+  'import'
 ]
 
 var identityRoleIds = {

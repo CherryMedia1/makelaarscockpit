@@ -6,7 +6,8 @@ Fase 2: documenten/gesprekken naar Realworks. Fase 3: workflow-automatisering.
 Realworks is het bronsysteem; wij spiegelen en verrijken.
 
 ## Stack
-TypeScript overal. Next.js (apps/web), Fastify API (apps/api), Azure Functions (apps/functions).
+TypeScript overal. Next.js (apps/web), jobs voor sync en import (apps/jobs), Azure Functions voor webhooks (apps/functions).
+Het portaal leest via packages/db; een Fastify API (apps/api) volgt later (ADR-008).
 PostgreSQL met row-level security. Azure: Container Apps, Functions, Service Bus, Key Vault, Blob.
 Infra in Bicep (infra/bicep). CI/CD via GitHub Actions.
 
@@ -28,3 +29,8 @@ Infra in Bicep (infra/bicep). CI/CD via GitHub Actions.
 npm install · npm run lint · npm run typecheck · npm run test
 Infra dev: az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
 Dev zuinig / aan: infra/scripts/dev-uit.sh · infra/scripts/dev-aan.sh (NAT Gateway via natGatewayEnabled in dev.bicepparam)
+
+## Huisstijl
+Volg altijd docs/huisstijl/BRAND.md voor kleuren, typografie, componenten en tone of voice.
+Gebruik uitsluitend de semantische tokens (--mc-color-*, of de Tailwind-klassen daarop), nooit losse hexwaarden.
+Na een wijziging in docs/huisstijl: npm run brand:sync.

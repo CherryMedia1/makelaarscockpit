@@ -16,6 +16,12 @@ param webImage string
 @description('Volledige image-naam van de migratie-job, bv. crcockpitneu.azurecr.io/migratie:<git-sha>.')
 param migratieImage string
 
+@description('Volledige image-naam van de jobs (sync, import), bv. crcockpitneu.azurecr.io/jobs:<git-sha>.')
+param jobsImage string
+
+@description('Sleutel van de tenant waarvoor het portaal en de jobs draaien, tot de inlog er is (issue #5).')
+param tenantSleutel string = 'cr'
+
 @description('Login-server van de gedeelde Container Registry.')
 param registryServer string = 'crcockpit${regionShort}.azurecr.io'
 
@@ -36,6 +42,41 @@ resource containerAppsEnv 'Microsoft.App/managedEnvironments@2026-01-01' existin
 resource keyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = {
   name: 'kv-cockpit-${env}-${regionShort}-01'
 }
+
+// Databasetoegang met de managed identity (Postgres is Entra-only); gedeeld door het portaal en de jobs.
+var databaseEnv = [
+  {
+    name: 'PGHOST'
+    value: 'psql-cockpit-${env}-${regionShort}.postgres.database.azure.com'
+  }
+  {
+    name: 'PGDATABASE'
+    value: 'cockpit'
+  }
+  {
+    name: 'PGUSER'
+    value: identity.name
+  }
+  {
+    name: 'AZURE_CLIENT_ID'
+    value: identity.properties.clientId
+  }
+  {
+    name: 'TENANT_SLEUTEL'
+    value: tenantSleutel
+  }
+]
+
+var jobsEnv = concat(databaseEnv, [
+  {
+    name: 'KEY_VAULT_URL'
+    value: keyVault.properties.vaultUri
+  }
+  {
+    name: 'STORAGE_ACCOUNT'
+    value: 'stcockpit${env}${regionShort}'
+  }
+])
 
 resource web 'Microsoft.App/containerApps@2026-01-01' = {
   name: 'ca-web-cockpit-${env}-${regionShort}'
@@ -78,12 +119,12 @@ resource web 'Microsoft.App/containerApps@2026-01-01' = {
         {
           name: 'web'
           image: webImage
-          env: [
+          env: concat(databaseEnv, [
             {
               name: 'PILOT_WACHTWOORD'
               secretRef: 'pilot-wachtwoord'
             }
-          ]
+          ])
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -178,6 +219,67 @@ resource migratieJob 'Microsoft.App/jobs@2026-01-01' = {
     }
   }
 }
+
+// Sync en import als handmatig te starten jobs (ADR-008). Beide gaan via het vaste NAT-IP naar buiten.
+var jobs = [
+  {
+    naam: 'sync'
+    commando: 'sync-realworks'
+  }
+  {
+    naam: 'import'
+    commando: 'import-verkooplijst'
+  }
+]
+
+resource taakJobs 'Microsoft.App/jobs@2026-01-01' = [
+  for job in jobs: {
+    name: 'job-${job.naam}-cockpit-${env}-${regionShort}'
+    location: location
+    tags: tags
+    identity: {
+      type: 'UserAssigned'
+      userAssignedIdentities: {
+        '${identity.id}': {}
+      }
+    }
+    properties: {
+      environmentId: containerAppsEnv.id
+      workloadProfileName: 'Consumption'
+      configuration: {
+        triggerType: 'Manual'
+        replicaTimeout: 900
+        replicaRetryLimit: 0
+        manualTriggerConfig: {
+          parallelism: 1
+          replicaCompletionCount: 1
+        }
+        registries: [
+          {
+            server: registryServer
+            identity: identity.id
+          }
+        ]
+      }
+      template: {
+        containers: [
+          {
+            name: job.naam
+            image: jobsImage
+            args: [
+              job.commando
+            ]
+            env: jobsEnv
+            resources: {
+              cpu: json('0.5')
+              memory: '1Gi'
+            }
+          }
+        ]
+      }
+    }
+  }
+]
 
 output migratieJobName string = migratieJob.name
 output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'

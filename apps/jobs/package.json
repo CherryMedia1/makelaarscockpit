@@ -1,0 +1,24 @@
+{
+  "name": "@makelaarscockpit/jobs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/jobs.cjs --external:pg-native --log-level=warning",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@azure/identity": "^4",
+    "@azure/keyvault-secrets": "^4",
+    "@azure/storage-blob": "^12",
+    "@makelaarscockpit/db": "*",
+    "@makelaarscockpit/domain": "*",
+    "@makelaarscockpit/realworks": "*",
+    "exceljs": "^4"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "esbuild": "^0.25"
+  }
+}
