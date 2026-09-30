@@ -1,37 +1,68 @@
 # ADR-005 Realworks-schrijfstrategie: wat kunnen we lezen en schrijven
-Datum: 2026-09-29 · Status: voorgesteld (tabel nog in te vullen vanuit de portal)
+Datum: 2026-09-30 · Status: voorgesteld (catalogus compleet; besluit ter bevestiging door Tim)
 ## Context
-Fase 2 en 3 hangen af van wat de Realworks-API's toestaan om te schrijven (leads, relaties, kenmerken, taken, afspraken, objectvelden). Deze tabel is de uitkomst van stap 4.6 van de week 1-handleiding: per endpoint of GET werkt, of er POST/PUT/PATCH bestaat, en wat er getest is. Testen van schrijven alleen met een afgesproken testwaarde (bijv. kenmerk "COCKPIT-TEST") die C&R daarna verwijdert, of tegen een testkantoor.
+Fase 2 en 3 hangen af van wat de Realworks-API's toestaan om te schrijven. Dit is de uitkomst van stap 4.6 van de week 1-handleiding. De catalogus komt uit de developer-portal (30-09-2026); alle GET-paden zijn getest vanaf het vaste IP 134.149.33.214 via de toolbox met de tokens van C&R (tenant `cr`). Schrijfoperaties (POST/PUT) zijn **niet** uitgevoerd.
 
-Getest vanaf het vaste IP 134.149.33.214 via de toolbox met de tokens per API (tenant `cr`). Veldstructuur van Wonen-objecten: `packages/realworks/examples/wonen-object-velden.md`.
+Twee codes: **afdelingscode 935773** (in paden en als `afdelingscode`-parameter) en **bedrijfscode 935585** (parameter `bedrijfscode` bij Relaties; alle medewerkers en kenmerken hangen hieraan).
 
-| API | Endpoint (methode + pad) | GET werkt? | POST/PUT aanwezig? | Getest resultaat | Welke velden | Opmerking |
-|---|---|---|---|---|---|---|
-| Wonen | GET `/wonen/v3/objecten` (lijst) | ja | _portal_ | 200, echte objecten; `aantal` en `pagina` als queryparameters | 14 secties, ~190 velden | `?actief=true` filtert |
-| Wonen | objectdetail | pad onbekend | _portal_ | 404 op `/wonen/v3/objecten/{id}` | | pad uit portal nodig |
-| Wonen | leads (import) | | _portal_ | | | behandelend medewerker meegeven mogelijk? |
-| Wonen | zoekopdrachten (import) | | _portal_ | | | |
-| Wonen | statistieken (import) | | _portal_ | | | |
-| Relaties | GET `/relaties/v1` (lijst), `/relaties/v1/{relatieId}?bedrijfscode=` | ja | _portal_ | 200 met data sinds 30-09 | adresgegevens e.a. | detail vereist bedrijfscode (afdelingscode 935773) |
-| Makelaars | GET `/makelaars/v1` | ja | _portal_ | 200, kantoorgegevens | | zit in elk token |
-| Relaties | relatie aanmaken | | _portal_ | | | |
-| Relaties | kenmerken (schrijven) | | _portal_ | | | |
-| Relaties | nieuwsbriefvoorkeur | | _portal_ | | | |
-| Taken | GET `/taken/v3/statussen/{afdelingscode}` | ja | n.v.t. | 200: lijst met `systemid`, `status`, `volgorde`, `actief` | | referentiedata |
-| Taken | GET `/taken/v3/types/{afdelingscode}` | ja | n.v.t. | 200: lijst met `systemid`, `type`, `korteomschrijving`, `gereedbinnendagen`, `actief` | | referentiedata |
-| Taken | GET `/taken/v3/medewerker/{medewerkerId}` (zoeken door taken) | route bestaat | n.v.t. | 404 zonder body met gegokte id's: echt medewerkerId nodig | | er is geen "alle taken"-lijst; ophalen gaat per medewerker |
-| Taken | GET `/taken/v3/afdeling/{afdelingscode}/taak/{taakId}` | route bestaat | n.v.t. | 404 met taakId 1 | | |
-| Taken | **POST `/taken/v3`** (nieuwe taak) | | **ja** | niet uitgevoerd | _uit portal: verplichte velden_ | taak aanmaken kan |
-| Taken | **PUT `/taken/v3/{taakId}`** (taak wijzigen) | | **ja** | niet uitgevoerd | _uit portal_ | taak wijzigen kan |
-| Taken | **POST `/taken/v3/relaties`** (relatie toevoegen voor taken) | | **ja** | niet uitgevoerd | _uit portal_ | |
-| Agenda | afspraken (lijst) | pad onbekend | _portal_ | 404 op `/agenda/v1`, `/agenda/v3/afspraken` | | pad uit portal nodig |
-| Agenda | afspraak aanmaken | | _portal_ | | | |
-| Objecten | object aanmaken / velden wijzigen | | _portal_ | | | cruciaal voor fase 2 |
+### Lezen (GET)
 
-_portal_ = af te lezen in developers.realworks.nl → APIs → endpoint-overzicht (alleen kijken, niets uitvoeren).
+| API | Pad | Getest | Opmerking |
+|---|---|---|---|
+| Wonen | `/wonen/v3/objecten` | 200, data | `aantal`, `pagina`, `actief`; 14 secties, ~190 velden (`packages/realworks/examples/wonen-object-velden.md`) |
+| Wonen | `/wonen/v3/objecten/{afdelingscode}/{objectcode}` | nog te testen | detail van één woning |
+| Wonen | `/wonen/v3/objecten/lijstVanZaken/{afdelingscode}/{objectcode}` | nog te testen | |
+| Wonen | `/wonen/v3/objecten/vragenlijst[/model2019\|/model2023]/{afdelingscode}/{objectcode}` | nog te testen | |
+| Wonen | `/wonen/v3/zoekopdracht/locaties?afdelingscode=` | 200, data | plaatsen met id's |
+| Relaties | `/relaties/v1` | 200, data | zoeken door relaties |
+| Relaties | `/relaties/v1/{relatieId}?bedrijfscode=` | 200, data | |
+| Relaties | `/relaties/v1/medewerker` | 200, 17 medewerkers | bron van `medewerkerId` voor Taken en Agenda |
+| Relaties | `/relaties/v1/kenmerken?bedrijfscode=` | 200, data | kenmerken met `id`, `groep`, `omschrijving` |
+| Relaties | `/relaties/v1/{bedrijf\|contactpersoon\|medewerker\|particulier}/{afdelingscode}/{relatiecode}` | nog te testen | detail per relatiesoort |
+| Taken | `/taken/v3/statussen/{afdelingscode}`, `/taken/v3/types/{afdelingscode}` | 200, data | referentiedata |
+| Taken | `/taken/v3/medewerker/{medewerkerId}` | 200 (lege lijst voor geteste medewerker) | **geen lijst voor de hele afdeling**: taken ophalen gaat per medewerker |
+| Taken | `/taken/v3/afdeling/{afdelingscode}/taak/{taakId}` | route bestaat | |
+| Agenda | `/agenda/v3/afdeling/{afdelingscode}` | 200, 12.655 agendapunten | paginering via `paginering.volgende` (cursor `vanaf=`), 100 per pagina |
+| Agenda | `/agenda/v3/medewerker/{medewerkerId}` | 200, data | |
+| Agenda | `/agenda/v3/afdeling/{afdelingscode}/agenda/{agendaId}` | nog te testen | |
+| Agenda | `/agenda/v3/statussen/{afdelingscode}`, `/agenda/v3/types/{afdelingscode}` | 200, data | referentiedata |
+| Makelaars | `/makelaars/v1` | 200, data | kantoorgegevens; zit in elk token |
+| BOG | `/bog/v3/objecten`, `/bog/v3/objecten/{afdelingscode}/{objectcode}` | niet getest | API niet afgenomen door C&R |
+| Aankoop | `/aankoop/v3/objecten/{afdelingscode}` | niet getest | API niet afgenomen door C&R |
 
-Vraag aan Realworks (nog te versturen): "Zijn er (partner)endpoints voor het aanmaken van taken, afspraken en objecten, of staan die op de roadmap?" Antwoord: _nog niet ontvangen_.
+### Schrijven (POST/PUT), niet uitgevoerd
+
+| API | Methode en pad | Wat het doet | Bruikbaar voor |
+|---|---|---|---|
+| Relaties | POST `/relaties/v1` | relatie toevoegen | fase 2: nieuwe contacten uit gesprekken |
+| Relaties | PUT `/relaties/v1` | relatie wijzigen | fase 2: gegevens bijwerken |
+| Relaties | PUT `/relaties/v1/afdelingen/{afdelingscode}/{bedrijven\|contactpersonen\|medewerkers\|personen}/{relatieId}/kenmerken/{kenmerkId}` | kenmerk toevoegen | fase 3: segmentatie en workflow-status |
+| Taken | POST `/taken/v3` | nieuwe taak | fase 3: taken uit workflows |
+| Taken | PUT `/taken/v3/{taakId}` | taak wijzigen | fase 3: status bijwerken |
+| Taken | POST `/taken/v3/relaties` | relatie toevoegen voor taken | |
+| Agenda | POST `/agenda/v3` | nieuw agendapunt | fase 3: afspraken inplannen |
+| Agenda | PUT `/agenda/v3/{agendaId}` | agendapunt wijzigen | |
+| Agenda | POST `/agenda/v3/relaties` | relatie toevoegen voor agenda | |
+| Wonen | POST `/wonen/v3/response` | response (lead) op een woning insturen | fase 2: leads |
+| Wonen | POST `/wonen/v3/relaties` | relatie toevoegen voor wonen | |
+| Wonen | POST `/wonen/v3/zoekopdracht` | zoekopdracht insturen | fase 2: zoekprofielen |
+| BOG | POST `/bog/v3/response`, POST `/bog/v3/relaties` | idem voor BOG | niet afgenomen |
+
+### Wat ontbreekt
+- **Geen** endpoint om een object (woning) aan te maken of objectvelden te wijzigen. Wonen-objecten zijn alleen-lezen.
+- **Geen** endpoint om documenten of bestanden bij een object of relatie te plaatsen.
+- **Geen** endpoint om taken voor de hele afdeling in één keer op te halen (wel per medewerker).
+- Geen DELETE-operaties.
+
+Vraag aan Realworks (nog te versturen): "Zijn er (partner)endpoints voor het aanmaken of wijzigen van objecten en het toevoegen van documenten, of staan die op de roadmap?" Antwoord: _nog niet ontvangen_.
 ## Beslissing
-Nog niet genomen; volgt zodra de tabel is ingevuld. Werkhypothese: alles wat Realworks niet laat schrijven, blijft in MakelaarsCockPit zelf (eigen tabellen met tenant_id) met een verwijzing naar het Realworks-object.
+Voorstel:
+1. **Fase 1 (dashboards)** gebruikt uitsluitend GET. Synchronisatie: Wonen en Relaties via lijst plus `tijdstipLaatsteWijziging`, Agenda via de afdelingslijst met cursor, Taken per medewerker (lijst uit `/relaties/v1/medewerker`).
+2. **Fase 2 en 3 schrijven alleen via de endpoints hierboven**: relaties, kenmerken, taken, agendapunten, responses en zoekopdrachten. Objectgegevens blijven in Realworks de waarheid en worden daar handmatig beheerd.
+3. **Documenten en gespreksverslagen** blijven in MakelaarsCockPit (Blob-container `documents`, eigen tabellen met `tenant_id`), met een verwijzing naar het Realworks-object of de relatie. In Realworks verschijnt hooguit een taak of agendapunt met een link.
+4. Schrijven wordt eerst getest met een herkenbare testwaarde (kenmerk of taak "COCKPIT-TEST") die daarna wordt verwijderd, en staat in dev achter een schakelaar per tenant.
 ## Gevolgen
-Bepaalt het ontwerp van fase 2 (documenten en gesprekken naar Realworks) en fase 3 (workflow-automatisering). Tot de tabel is ingevuld, bouwt fase 1 alleen op GET.
+- Het datamodel in `packages/domain` heeft twee sleutels per tenant nodig: afdelingscode en bedrijfscode.
+- De sync voor Taken vraagt N calls (één per medewerker); bij 17 medewerkers is dat geen probleem.
+- "Documenten naar Realworks" uit de oorspronkelijke fase 2-omschrijving is via de API niet mogelijk; de scope van fase 2 wordt: gegevens uit documenten en gesprekken vastleggen als relatie, kenmerk, taak, agendapunt of response.
+- Als Realworks alsnog object- of documentendpoints biedt, komt er een vervolg-ADR.

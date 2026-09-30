@@ -102,3 +102,14 @@ Een 404 met "Resource not found" = het voorvoegsel bestaat maar het pad niet; ee
 | PUT | `/taken/v3/{taakId}` | niet uitgevoerd (schrijven) |
 
 Patroon: versie `v3`, en de afdelingscode zit in het pad, niet als queryparameter.
+
+## Codes en catalogus (2026-09-30)
+
+| Wat | Waarde | Key Vault |
+|---|---|---|
+| Afdelingscode C&R | `935773` | `tenant-cr-realworks-afdeling` |
+| Bedrijfscode C&R | `935585` | `tenant-cr-realworks-bedrijfscode` |
+
+De afdelingscode staat in paden (`/taken/v3/types/935773`) en als `afdelingscode`-parameter; de bedrijfscode is de `bedrijfscode`-parameter bij Relaties. De volledige lijst van endpoints, met wat getest is en wat geschreven kan worden, staat in `docs/adr/005-realworks-schrijfstrategie.md`. Medewerker-id's komen uit `GET /relaties/v1/medewerker` (17 medewerkers).
+
+Nog te testen zodra de sessielimiet van Azure is verlopen: `/wonen/v3/objecten/{afdelingscode}/{objectcode}` en de lijstVanZaken/vragenlijst-paden.
