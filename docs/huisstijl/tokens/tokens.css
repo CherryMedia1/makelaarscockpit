@@ -1,0 +1,181 @@
+/* MakelaarsCockpit — design tokens v1.0 */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=Figtree:wght@400;500;600&display=swap');
+
+:root {
+  --mc-inkt: #14202B;
+  --mc-petrol: #1E4D57;
+  --mc-baksteen: #C4613A;
+  --mc-oker: #D9A441;
+  --mc-zand: #F5F0E8;
+  --mc-klei: #E7DDD0;
+  --mc-steen: #5E6770;
+  --mc-wit: #FFFFFF;
+  --mc-petrol-50: #F4F7F8;
+  --mc-petrol-100: #E8EEEF;
+  --mc-petrol-200: #CEE0E3;
+  --mc-petrol-300: #ABC8CF;
+  --mc-petrol-400: #7DB3BF;
+  --mc-petrol-500: #5BA0AE;
+  --mc-petrol-600: #478390;
+  --mc-petrol-700: #386771;
+  --mc-petrol-800: #1E4D57;
+  --mc-petrol-900: #1B3237;
+  --mc-baksteen-50: #F9F5F3;
+  --mc-baksteen-100: #F2E9E6;
+  --mc-baksteen-200: #E9D2C8;
+  --mc-baksteen-300: #DAB0A0;
+  --mc-baksteen-400: #D38769;
+  --mc-baksteen-500: #C4613A;
+  --mc-baksteen-600: #A55231;
+  --mc-baksteen-700: #824026;
+  --mc-baksteen-800: #5E2F1C;
+  --mc-baksteen-900: #3F1F13;
+  --mc-oker-50: #F9F7F3;
+  --mc-oker-100: #F3EEE5;
+  --mc-oker-200: #EDDFC4;
+  --mc-oker-300: #E0C799;
+  --mc-oker-400: #DFB25E;
+  --mc-oker-500: #D9A441;
+  --mc-oker-600: #B28124;
+  --mc-oker-700: #8C651C;
+  --mc-oker-800: #664A14;
+  --mc-oker-900: #44310E;
+  --mc-neutraal-0: #FFFFFF;
+  --mc-neutraal-50: #F5F0E8;
+  --mc-neutraal-100: #EFE8DC;
+  --mc-neutraal-200: #E7DDD0;
+  --mc-neutraal-300: #CFC6BA;
+  --mc-neutraal-400: #A39C94;
+  --mc-neutraal-500: #7C8088;
+  --mc-neutraal-600: #5E6770;
+  --mc-neutraal-700: #3E4852;
+  --mc-neutraal-800: #26323D;
+  --mc-neutraal-900: #1B2731;
+  --mc-neutraal-950: #14202B;
+  --mc-color-bg: #F5F0E8;
+  --mc-color-surface: #FFFFFF;
+  --mc-color-surface-sunken: #EFE8DC;
+  --mc-color-border: #E7DDD0;
+  --mc-color-border-strong: #CFC6BA;
+  --mc-color-text: #14202B;
+  --mc-color-text-muted: #5E6770;
+  --mc-color-text-inverse: #FFFFFF;
+  --mc-color-primary: #1E4D57;
+  --mc-color-primary-hover: #163C44;
+  --mc-color-primary-subtle: #E1EEF0;
+  --mc-color-on-primary: #FFFFFF;
+  --mc-color-accent: #C4613A;
+  --mc-color-accent-strong: #A55231;
+  --mc-color-accent-text: #A55231;
+  --mc-color-accent-subtle: #F8E6DD;
+  --mc-color-on-accent: #FFFFFF;
+  --mc-color-focus: #2F7A87;
+  --mc-color-highlight: #D9A441;
+  --mc-succes-fg: #1F6B4A;
+  --mc-succes-bg: #E3F1E9;
+  --mc-succes-base: #2E8B5F;
+  --mc-waarschuwing-fg: #8A5A0B;
+  --mc-waarschuwing-bg: #FBF0D9;
+  --mc-waarschuwing-base: #D9A441;
+  --mc-fout-fg: #A12A1E;
+  --mc-fout-bg: #FBE5E1;
+  --mc-fout-base: #C8372B;
+  --mc-info-fg: #1E4D57;
+  --mc-info-bg: #E1EEF0;
+  --mc-info-base: #2F7A87;
+  --mc-chart-1: #1E4D57;
+  --mc-chart-2: #C4613A;
+  --mc-chart-3: #D9A441;
+  --mc-chart-4: #7C9A86;
+  --mc-chart-5: #8FA9B8;
+  --mc-chart-6: #8A6F8F;
+  --mc-font-display: 'Sora', ui-sans-serif, system-ui, sans-serif;
+  --mc-font-body: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+  --mc-text-display: 700 48px/56px var(--mc-font-display); --mc-tracking-display: -0.02em;
+  --mc-text-h1: 700 36px/44px var(--mc-font-display); --mc-tracking-h1: -0.02em;
+  --mc-text-h2: 600 28px/36px var(--mc-font-display); --mc-tracking-h2: -0.015em;
+  --mc-text-h3: 600 22px/30px var(--mc-font-display); --mc-tracking-h3: -0.01em;
+  --mc-text-h4: 600 18px/26px var(--mc-font-display); --mc-tracking-h4: -0.005em;
+  --mc-text-kpi: 700 40px/44px var(--mc-font-display); --mc-tracking-kpi: -0.02em;
+  --mc-text-body-lg: 400 18px/28px var(--mc-font-body); --mc-tracking-body-lg: 0;
+  --mc-text-body: 400 16px/24px var(--mc-font-body); --mc-tracking-body: 0;
+  --mc-text-body-sm: 400 14px/20px var(--mc-font-body); --mc-tracking-body-sm: 0;
+  --mc-text-label: 500 14px/20px var(--mc-font-body); --mc-tracking-label: 0;
+  --mc-text-caption: 500 12px/16px var(--mc-font-body); --mc-tracking-caption: 0.01em;
+  --mc-text-overline: 600 12px/16px var(--mc-font-body); --mc-tracking-overline: 0.08em;
+  --mc-space-0: 0px;
+  --mc-space-1: 4px;
+  --mc-space-2: 8px;
+  --mc-space-3: 12px;
+  --mc-space-4: 16px;
+  --mc-space-5: 20px;
+  --mc-space-6: 24px;
+  --mc-space-8: 32px;
+  --mc-space-10: 40px;
+  --mc-space-12: 48px;
+  --mc-space-16: 64px;
+  --mc-space-20: 80px;
+  --mc-space-24: 96px;
+  --mc-radius-sm: 6px;
+  --mc-radius-md: 10px;
+  --mc-radius-lg: 16px;
+  --mc-radius-xl: 24px;
+  --mc-radius-full: 9999px;
+  --mc-shadow-sm: 0 1px 2px rgba(20,32,43,0.06);
+  --mc-shadow-md: 0 4px 12px rgba(20,32,43,0.08);
+  --mc-shadow-lg: 0 12px 32px rgba(20,32,43,0.12);
+  --mc-duration-fast: 150ms;
+  --mc-duration-base: 250ms;
+  --mc-easing: cubic-bezier(0.2, 0, 0, 1);
+}
+
+[data-theme="dark"] {
+  --mc-color-bg: #0F1820;
+  --mc-color-surface: #16232D;
+  --mc-color-surface-sunken: #0B131A;
+  --mc-color-border: #26343F;
+  --mc-color-border-strong: #3A4A57;
+  --mc-color-text: #F5F0E8;
+  --mc-color-text-muted: #9AA6B0;
+  --mc-color-text-inverse: #14202B;
+  --mc-color-primary: #5FA3AE;
+  --mc-color-primary-hover: #7DB8C1;
+  --mc-color-primary-subtle: #173640;
+  --mc-color-on-primary: #14202B;
+  --mc-color-accent: #E07A52;
+  --mc-color-accent-strong: #E07A52;
+  --mc-color-accent-text: #E8906C;
+  --mc-color-accent-subtle: #3A2219;
+  --mc-color-on-accent: #14202B;
+  --mc-color-focus: #7DB8C1;
+  --mc-color-highlight: #D9A441;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --mc-color-bg: #0F1820;
+    --mc-color-surface: #16232D;
+    --mc-color-surface-sunken: #0B131A;
+    --mc-color-border: #26343F;
+    --mc-color-border-strong: #3A4A57;
+    --mc-color-text: #F5F0E8;
+    --mc-color-text-muted: #9AA6B0;
+    --mc-color-text-inverse: #14202B;
+    --mc-color-primary: #5FA3AE;
+    --mc-color-primary-hover: #7DB8C1;
+    --mc-color-primary-subtle: #173640;
+    --mc-color-on-primary: #14202B;
+    --mc-color-accent: #E07A52;
+    --mc-color-accent-strong: #E07A52;
+    --mc-color-accent-text: #E8906C;
+    --mc-color-accent-subtle: #3A2219;
+    --mc-color-on-accent: #14202B;
+    --mc-color-focus: #7DB8C1;
+    --mc-color-highlight: #D9A441;
+  }
+}
+
+/* Basis */
+body { background: var(--mc-color-bg); color: var(--mc-color-text); font: var(--mc-text-body); }
+h1,h2,h3,h4 { font-family: var(--mc-font-display); }
+.mc-num, table td { font-variant-numeric: tabular-nums; }
