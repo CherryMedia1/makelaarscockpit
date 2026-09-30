@@ -21,6 +21,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Alles behalve de health-check voor de container en statische bestanden.
-  matcher: ["/((?!api/health|_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png).*)"],
+  // Alles behalve de health-check voor de container, statische bestanden en de merkbestanden (logo's zijn niet vertrouwelijk,
+  // en de afbeeldingsverwerking van Next.js haalt ze intern op zonder inloggegevens).
+  matcher: ["/((?!api/health|_next/static|_next/image|brand/|favicon.ico|icon.svg|apple-icon.png).*)"],
 };
