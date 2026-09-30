@@ -88,3 +88,17 @@ Getest vanaf 134.149.33.214 met `rw multi cr <pad> <pad> …` (meerdere paden in
 | Zoekopdracht, Kenmerken | voorvoegsels `/zoekopdracht`, `/zoekopdrachten`, `/kenmerken` bestaan niet (gateway-403); pad uit de portal nodig |
 
 Een 404 met "Resource not found" = het voorvoegsel bestaat maar het pad niet; een 403 `{"message":"Forbidden"}` van de gateway = het voorvoegsel bestaat niet.
+
+## Taken-API (uit de portal, 2026-09-30)
+
+| Methode | Pad | Getest |
+|---|---|---|
+| GET | `/taken/v3/statussen/{afdelingscode}` | 200 |
+| GET | `/taken/v3/types/{afdelingscode}` | 200 |
+| GET | `/taken/v3/medewerker/{medewerkerId}` | route bestaat; echt medewerkerId nodig (404 zonder body = id onbekend) |
+| GET | `/taken/v3/afdeling/{afdelingscode}/taak/{taakId}` | route bestaat; echt taakId nodig |
+| POST | `/taken/v3` | niet uitgevoerd (schrijven) |
+| POST | `/taken/v3/relaties` | niet uitgevoerd (schrijven) |
+| PUT | `/taken/v3/{taakId}` | niet uitgevoerd (schrijven) |
+
+Patroon: versie `v3`, en de afdelingscode zit in het pad, niet als queryparameter.

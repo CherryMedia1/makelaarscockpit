@@ -17,8 +17,13 @@ Getest vanaf het vaste IP 134.149.33.214 via de toolbox met de tokens per API (t
 | Relaties | relatie aanmaken | | _portal_ | | | |
 | Relaties | kenmerken (schrijven) | | _portal_ | | | |
 | Relaties | nieuwsbriefvoorkeur | | _portal_ | | | |
-| Taken | taken (lijst) | pad onbekend | _portal_ | 404 op `/taken/v1`, `/taken/v3/taken` | | pad uit portal nodig |
-| Taken | taak aanmaken/wijzigen | | _portal_ | | | |
+| Taken | GET `/taken/v3/statussen/{afdelingscode}` | ja | n.v.t. | 200: lijst met `systemid`, `status`, `volgorde`, `actief` | | referentiedata |
+| Taken | GET `/taken/v3/types/{afdelingscode}` | ja | n.v.t. | 200: lijst met `systemid`, `type`, `korteomschrijving`, `gereedbinnendagen`, `actief` | | referentiedata |
+| Taken | GET `/taken/v3/medewerker/{medewerkerId}` (zoeken door taken) | route bestaat | n.v.t. | 404 zonder body met gegokte id's: echt medewerkerId nodig | | er is geen "alle taken"-lijst; ophalen gaat per medewerker |
+| Taken | GET `/taken/v3/afdeling/{afdelingscode}/taak/{taakId}` | route bestaat | n.v.t. | 404 met taakId 1 | | |
+| Taken | **POST `/taken/v3`** (nieuwe taak) | | **ja** | niet uitgevoerd | _uit portal: verplichte velden_ | taak aanmaken kan |
+| Taken | **PUT `/taken/v3/{taakId}`** (taak wijzigen) | | **ja** | niet uitgevoerd | _uit portal_ | taak wijzigen kan |
+| Taken | **POST `/taken/v3/relaties`** (relatie toevoegen voor taken) | | **ja** | niet uitgevoerd | _uit portal_ | |
 | Agenda | afspraken (lijst) | pad onbekend | _portal_ | 404 op `/agenda/v1`, `/agenda/v3/afspraken` | | pad uit portal nodig |
 | Agenda | afspraak aanmaken | | _portal_ | | | |
 | Objecten | object aanmaken / velden wijzigen | | _portal_ | | | cruciaal voor fase 2 |
