@@ -13,6 +13,9 @@ param location string = resourceGroup().location
 @description('Volledige image-naam van het portaal, bv. crcockpitneu.azurecr.io/web:<git-sha>.')
 param webImage string
 
+@description('Volledige image-naam van de migratie-job, bv. crcockpitneu.azurecr.io/migratie:<git-sha>.')
+param migratieImage string
+
 @description('Login-server van de gedeelde Container Registry.')
 param registryServer string = 'crcockpit${regionShort}.azurecr.io'
 
@@ -114,4 +117,67 @@ resource web 'Microsoft.App/containerApps@2026-01-01' = {
   }
 }
 
+// Voert de databasemigraties uit vanuit het VNet (Postgres laat alleen het NAT-IP toe) met de managed identity als inlog.
+resource migratieJob 'Microsoft.App/jobs@2026-01-01' = {
+  name: 'job-migratie-cockpit-${env}-${regionShort}'
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identity.id}': {}
+    }
+  }
+  properties: {
+    environmentId: containerAppsEnv.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      triggerType: 'Manual'
+      replicaTimeout: 600
+      replicaRetryLimit: 0
+      manualTriggerConfig: {
+        parallelism: 1
+        replicaCompletionCount: 1
+      }
+      registries: [
+        {
+          server: registryServer
+          identity: identity.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'migratie'
+          image: migratieImage
+          env: [
+            {
+              name: 'PGHOST'
+              value: 'psql-cockpit-${env}-${regionShort}.postgres.database.azure.com'
+            }
+            {
+              name: 'PGDATABASE'
+              value: 'cockpit'
+            }
+            {
+              name: 'PGUSER'
+              value: identity.name
+            }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: identity.properties.clientId
+            }
+          ]
+          resources: {
+            cpu: json('0.25')
+            memory: '0.5Gi'
+          }
+        }
+      ]
+    }
+  }
+}
+
+output migratieJobName string = migratieJob.name
 output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'

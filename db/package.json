@@ -1,0 +1,14 @@
+{
+  "name": "@makelaarscockpit/db-migraties",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "migreer": "node migrate.mjs",
+    "lint": "eslint migrate.mjs"
+  },
+  "dependencies": {
+    "@azure/identity": "^4",
+    "pg": "^8"
+  }
+}

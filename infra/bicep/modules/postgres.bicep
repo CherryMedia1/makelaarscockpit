@@ -54,6 +54,15 @@ resource postgres 'Microsoft.DBforPostgreSQL/flexibleServers@2025-08-01' = {
   }
 }
 
+resource database 'Microsoft.DBforPostgreSQL/flexibleServers/databases@2025-08-01' = {
+  parent: postgres
+  name: 'cockpit'
+  properties: {
+    charset: 'UTF8'
+    collation: 'en_US.utf8'
+  }
+}
+
 resource allowNatGateway 'Microsoft.DBforPostgreSQL/flexibleServers/firewallRules@2025-08-01' = {
   parent: postgres
   name: 'allow-nat-gateway'
@@ -74,6 +83,7 @@ resource identityAdmin 'Microsoft.DBforPostgreSQL/flexibleServers/administrators
   }
   dependsOn: [
     allowNatGateway
+    database
   ]
 }
 
@@ -91,4 +101,5 @@ resource humanAdmin 'Microsoft.DBforPostgreSQL/flexibleServers/administrators@20
 }
 
 output postgresName string = postgres.name
+output databaseName string = database.name
 output postgresFqdn string = postgres.properties.fullyQualifiedDomainName
