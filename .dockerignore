@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/.next
+input
+docs
+infra
+db
+.devcontainer
+.github
+*.md

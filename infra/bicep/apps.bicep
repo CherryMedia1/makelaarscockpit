@@ -1,0 +1,117 @@
+// Applicatielaag voor één omgeving: de Container Apps met hun images. Los van main.bicep, zodat een infra-deploy nooit een app-versie terugzet.
+targetScope = 'resourceGroup'
+
+@description('Omgeving: dev, test of prod.')
+@allowed(['dev', 'test', 'prod'])
+param env string
+
+@description('Korte regiocode in alle resourcenamen, bv. neu (North Europe).')
+param regionShort string = 'neu'
+
+param location string = resourceGroup().location
+
+@description('Volledige image-naam van het portaal, bv. crcockpitneu.azurecr.io/web:<git-sha>.')
+param webImage string
+
+@description('Login-server van de gedeelde Container Registry.')
+param registryServer string = 'crcockpit${regionShort}.azurecr.io'
+
+@description('Tags voor alle resources.')
+param tags object = {
+  project: 'makelaarscockpit'
+  env: env
+}
+
+resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' existing = {
+  name: 'id-cockpit-${env}-${regionShort}'
+}
+
+resource containerAppsEnv 'Microsoft.App/managedEnvironments@2026-01-01' existing = {
+  name: 'cae-cockpit-${env}-${regionShort}'
+}
+
+resource keyVault 'Microsoft.KeyVault/vaults@2026-02-01' existing = {
+  name: 'kv-cockpit-${env}-${regionShort}-01'
+}
+
+resource web 'Microsoft.App/containerApps@2026-01-01' = {
+  name: 'ca-web-cockpit-${env}-${regionShort}'
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identity.id}': {}
+    }
+  }
+  properties: {
+    environmentId: containerAppsEnv.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      activeRevisionsMode: 'Single'
+      ingress: {
+        external: true
+        targetPort: 3000
+        transport: 'auto'
+        allowInsecure: false
+      }
+      registries: [
+        {
+          server: registryServer
+          identity: identity.id
+        }
+      ]
+      secrets: [
+        {
+          // Tijdelijke afscherming van de pilot tot de inlog er is (issue #5).
+          name: 'pilot-wachtwoord'
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/pilot-wachtwoord'
+          identity: identity.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'web'
+          image: webImage
+          env: [
+            {
+              name: 'PILOT_WACHTWOORD'
+              secretRef: 'pilot-wachtwoord'
+            }
+          ]
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/api/health'
+                port: 3000
+              }
+              periodSeconds: 30
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/api/health'
+                port: 3000
+              }
+              periodSeconds: 10
+            }
+          ]
+        }
+      ]
+      scale: {
+        // Schaalt naar nul als niemand het portaal gebruikt; de eerste aanvraag daarna duurt enkele seconden.
+        minReplicas: 0
+        maxReplicas: 2
+      }
+    }
+  }
+}
+
+output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'
