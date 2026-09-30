@@ -2,7 +2,7 @@
 
 Doel: Realworks aanroepen vanaf het vaste adres 134.149.33.214, ook al wisselt het IP van je laptop. Omdat deze subscription geen VM's toestaat (zie `docs/handleiding-dev-vm.md`), gebruiken we een klein containertje in de bestaande Container Apps Environment. Het gaat via de NAT Gateway naar buiten en heeft de managed identity, dus het leest de Realworks-tokens rechtstreeks uit Key Vault.
 
-Kosten: de NAT Gateway moet aan staan (€ 28 per maand). De container zelf staat standaard op nul replica's en kost alleen iets tijdens gebruik (ordegrootte € 0,02 per uur).
+Kosten: de NAT Gateway moet aan staan (€ 28 per maand). De container staat standaard uit (revisie gedeactiveerd) en kost alleen iets tijdens gebruik (ordegrootte € 0,02 per uur).
 
 ## Wat er is
 
@@ -19,7 +19,7 @@ Kosten: de NAT Gateway moet aan staan (€ 28 per maand). De container zelf staa
    ```
    infra/scripts/toolbox.sh
    ```
-   Het script schaalt de container op (ongeveer een halve minuut), opent een bash-shell en schaalt hem na `exit` weer terug naar nul.
+   Het script start de container (ongeveer een halve minuut), opent een bash-shell en stopt hem na `exit` weer.
 3. In de shell, eerste keer per sessie:
    ```
    curl -s https://api.ipify.org; echo          # moet 134.149.33.214 geven
@@ -27,7 +27,7 @@ Kosten: de NAT Gateway moet aan staan (€ 28 per maand). De container zelf staa
    rw cr /relaties/v1                           # C&R-token voor Relaties
    ```
    `rw [tenant] [pad] [host]`: tenant `dev` gebruikt `tenant-dev-realworks-token`, tenant `cr` de tokens per API. Het commando logt zelf in met de managed identity.
-4. Klaar? `exit`. Het script schaalt terug naar nul.
+4. Klaar? `exit`. Het script stopt de container.
 
 ## Realworks-whitelist
 

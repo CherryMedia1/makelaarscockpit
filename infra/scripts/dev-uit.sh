@@ -36,9 +36,10 @@ else
   echo "overgeslagen (bestaat niet)"
 fi
 
-echo "== Toolbox-container naar 0 replica's (ca-toolbox-cockpit-dev-neu) =="
+echo "== Toolbox-container stoppen (ca-toolbox-cockpit-dev-neu) =="
 if az containerapp show -g "$RG" -n "ca-toolbox-cockpit-dev-neu" --output none 2>/dev/null; then
-  az containerapp update -g "$RG" -n "ca-toolbox-cockpit-dev-neu" --min-replicas 0 --output none && echo "teruggeschaald"
+  rev=$(az containerapp show -g "$RG" -n "ca-toolbox-cockpit-dev-neu" --query properties.latestRevisionName -o tsv | tr -d '\r')
+  az containerapp revision deactivate -g "$RG" -n "ca-toolbox-cockpit-dev-neu" --revision "$rev" --output none && echo "gestopt"
 else
   echo "overgeslagen (bestaat niet)"
 fi

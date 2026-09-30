@@ -4,7 +4,7 @@ Wat er in Realworks nog moet gebeuren, waar het staat, en wie het doet. Stand: 2
 
 Er zijn twee plekken:
 - **Jouw developer-portal** (developers.realworks.nl): tokens, IP-whitelist per token, voorwaarden, documentatie van de API's met "Try it out".
-- **De API-manager in het Realworks CRM van C&R**: welke API's zijn afgenomen, jouw Developer ID, de vrijgave (inzageniveaus) en soms ook IP-adressen. Alleen C&R kan hier iets wijzigen.
+- **De API-manager in het Realworks CRM van C&R**: welke API's zijn afgenomen, jouw Developer ID, de vrijgave (inzageniveaus) en soms ook IP-adressen. Sinds 2026-09-30 heb je hier een eigen inlog, dus hoofdstuk 5 kun je zelf doen. Wijzig alleen de API-instellingen van de MakelaarsCockPit-koppeling; laat koppelingen van andere leveranciers (website, Funda, enzovoort) ongemoeid.
 
 ## 1. IP-whitelist corrigeren (jij, developer-portal, 5 minuten)
 
@@ -31,7 +31,7 @@ Portal → APIs → **Taken** → open een endpoint → "Try it out". Noteer het
 
 Voor stap 4.6 en `docs/adr/005-realworks-schrijfstrategie.md`. Per API het endpoint-overzicht openen en per rij van de tabel in de ADR noteren: staat er naast GET ook POST, PUT of PATCH, en welke velden vraagt die? Niets uitvoeren, alleen kijken. Wat ontbreekt, vraag je dezelfde dag aan Realworks: "Zijn er (partner)endpoints voor het aanmaken van taken, afspraken en objecten, of staan die op de roadmap?"
 
-## 5. Bij C&R (Realworks-beheerder van C&R, 15 minuten met gedeeld scherm)
+## 5. In het Realworks CRM van C&R (jij, met je eigen inlog, 15 minuten)
 
 CRM → Marketplace / API-manager, per afgenomen API:
 
@@ -44,6 +44,8 @@ CRM → Marketplace / API-manager, per afgenomen API:
 | Vrijgave Taken en Agenda | 365 dagen terug, 90 dagen vooruit, inzageniveau "Iedereen" | **controleren** zodra de paden bekend zijn |
 | IP-adressen (als dat veld bij C&R staat) | `134.149.33.214/32` | controleren |
 | Afdelingscode(s) | vragen aan Realworks welke gelden voor C&R | **open**; daarna in Key Vault: `realworks-token-opslaan.sh` vraagt erom, of handmatig als `tenant-cr-realworks-afdeling` |
+
+Werkwijze: wijzig één instelling, zeg in de chat wat je hebt gewijzigd, en laat de bijbehorende call testen vanaf de toolbox. Zo zie je per stap of het effect heeft.
 
 ## 6. Webhook (jij, developer-portal, pas in week 2)
 
