@@ -95,7 +95,14 @@ describe("berekenVerkoop", () => {
     expect(() => berekenVerkoop({ ...basis, aandeel: 1.5 })).toThrow(/aandeel/);
   });
 
-  it("weigert negatieve bedragen", () => {
-    expect(() => berekenVerkoop({ verkoopprijs: 300000, courtage: null, opstartnota: -1, aandeel: 1 })).toThrow(/opstartnota/);
+  it("een negatieve opstartnota is een verrekening en telt als aftrek (komt in de Excel voor)", () => {
+    const r = berekenVerkoop({ verkoopprijs: 300000, courtage: { soort: "percentage", fractie: 0.01 }, opstartnota: -500, aandeel: 1 });
+    expect(r.omzetTotaal).toBe(2500);
+  });
+
+  it("weigert een negatieve verkoopprijs of courtage", () => {
+    expect(() => berekenVerkoop({ verkoopprijs: -1, courtage: { soort: "percentage", fractie: 0.01 }, opstartnota: 0, aandeel: 1 })).toThrow(/verkoopprijs/);
+    expect(() => berekenVerkoop({ verkoopprijs: 300000, courtage: { soort: "vast", bedrag: -5 }, opstartnota: 0, aandeel: 1 })).toThrow(/courtage/);
+    expect(() => berekenVerkoop({ verkoopprijs: 300000, courtage: null, opstartnota: Number.NaN, aandeel: 1 })).toThrow(/opstartnota/);
   });
 });

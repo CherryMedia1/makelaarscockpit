@@ -59,10 +59,8 @@ async function migreer(client) {
 async function controleerRls(client) {
   await client.query("begin");
   try {
-    await client.query("alter table tenant no force row level security");
     const a = (await client.query("insert into tenant (sleutel, naam) values ('rls-test-a', 'RLS test A') returning id")).rows[0].id;
     const b = (await client.query("insert into tenant (sleutel, naam) values ('rls-test-b', 'RLS test B') returning id")).rows[0].id;
-    await client.query("alter table tenant force row level security");
 
     await client.query("set local role cockpit_app");
     const alsTenant = (id) => client.query("select set_config('app.tenant_id', $1, true)", [id]);

@@ -1,0 +1,31 @@
+// Gegevens die uit Realworks worden gespiegeld, in de vorm waarin wij ze bewaren (ADR-005).
+
+export type MedewerkerGegevens = {
+  realworksId: number;
+  weergavenaam: string;
+  roepnaam: string | null;
+  tussenvoegsel: string | null;
+  achternaam: string | null;
+};
+
+export type ObjectGegevens = {
+  realworksId: number;
+  objectcode: string | null;
+  afdelingscode: string | null;
+  straat: string | null;
+  huisnummer: string | null;
+  huisnummertoevoeging: string | null;
+  postcode: string | null;
+  plaats: string | null;
+  status: string | null;
+  actief: boolean | null;
+  vraagprijs: number | null;
+  transactieprijs: number | null;
+  /** 'JJJJ-MM-DD' */
+  transactiedatum: string | null;
+  transportdatum: string | null;
+  publicatiedatum: string | null;
+  gekoppeldeMakelaarCode: string | null;
+  /** Tijdstip in Nederlandse tijd, 'JJJJ-MM-DD UU:MM:SS', zoals Realworks het levert. */
+  realworksGewijzigdOp: string | null;
+};

@@ -21,6 +21,16 @@ export function getal(waarde: number): string {
   return geheelFormatter.format(waarde);
 }
 
+/** Aantal met hoogstens één decimaal, voor gedeelde verkopen die als een halve woning tellen. */
+export function aantal(waarde: number): string {
+  return Number.isInteger(waarde) ? geheelFormatter.format(waarde) : decimaalFormatter.format(waarde);
+}
+
+const maandJaarFormatter = new Intl.DateTimeFormat("nl-NL", { month: "short", year: "numeric" });
+export function maandJaar(d: Date): string {
+  return maandJaarFormatter.format(d);
+}
+
 export function procent(fractie: number, metTeken = false): string {
   const waarde = fractie * 100;
   const tekst = Number.isInteger(Math.round(waarde * 10) / 10) ? geheelFormatter.format(waarde) : decimaalFormatter.format(waarde);

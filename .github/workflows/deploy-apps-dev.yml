@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['apps/web/**', 'packages/**', 'db/**', 'infra/bicep/apps.bicep', 'package-lock.json', '.github/workflows/deploy-apps-dev.yml']
+    paths: ['apps/web/**', 'apps/jobs/**', 'packages/**', 'db/**', 'infra/bicep/apps.bicep', 'package-lock.json', '.github/workflows/deploy-apps-dev.yml']
 permissions:
   id-token: write
   contents: read
@@ -19,6 +19,7 @@ jobs:
       REGISTRY: crcockpitneu
       WEB_IMAGE: crcockpitneu.azurecr.io/web:${{ github.sha }}
       MIGRATIE_IMAGE: crcockpitneu.azurecr.io/migratie:${{ github.sha }}
+      JOBS_IMAGE: crcockpitneu.azurecr.io/jobs:${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: azure/login@v2
@@ -30,13 +31,15 @@ jobs:
         run: |
           az acr login --name "$REGISTRY"
           docker build -f db/Dockerfile -t "$MIGRATIE_IMAGE" db
+          docker build -f apps/jobs/Dockerfile -t "$JOBS_IMAGE" .
           docker build -f apps/web/Dockerfile -t "$WEB_IMAGE" .
           docker push "$MIGRATIE_IMAGE"
+          docker push "$JOBS_IMAGE"
           docker push "$WEB_IMAGE"
       - name: Applicatielaag deployen
         run: |
           az deployment group create -g "$RG" -f infra/bicep/apps.bicep \
-            -p env=dev webImage="$WEB_IMAGE" migratieImage="$MIGRATIE_IMAGE" \
+            -p env=dev webImage="$WEB_IMAGE" migratieImage="$MIGRATIE_IMAGE" jobsImage="$JOBS_IMAGE" \
             --query properties.outputs.webUrl.value -o tsv
       - name: Databasemigraties uitvoeren
         run: |

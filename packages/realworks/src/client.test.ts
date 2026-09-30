@@ -1,0 +1,93 @@
+import { describe, expect, it, vi } from "vitest";
+import { RealworksFout, haalMedewerkers, haalWonenObjecten, naarMedewerker, naarObject } from "./index";
+
+// Verzonnen antwoorden in de vorm van de echte API (zie examples/wonen-object-velden.md); geen echte gegevens.
+const wonenObject = (id: number, overdracht: Record<string, unknown> = {}) => ({
+  id,
+  actief: true,
+  tijdstipLaatsteWijziging: "2026-09-30 13:47:09",
+  adres: { straat: "Voorbeeldstraat", huisnummer: { hoofdnummer: 12, toevoeging: "A" }, postcode: "4701 AA", plaats: "ROOSENDAAL" },
+  marketing: { publicatiedatum: "2026-09-30 06:00:00" },
+  algemeen: { gekoppeldeMakelaar: "108886" },
+  diversen: { diversen: { objectcode: "OBJ-1", afdelingscode: "935773" } },
+  financieel: { overdracht: { status: "BESCHIKBAAR", koopprijs: 319000, transactieprijs: null, transactiedatum: null, transportdatum: null, ...overdracht } },
+});
+
+const antwoord = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+describe("naarObject", () => {
+  it("neemt de velden over die wij bewaren", () => {
+    expect(naarObject(wonenObject(1))).toEqual({
+      realworksId: 1, objectcode: "OBJ-1", afdelingscode: "935773",
+      straat: "Voorbeeldstraat", huisnummer: "12", huisnummertoevoeging: "A", postcode: "4701 AA", plaats: "ROOSENDAAL",
+      status: "BESCHIKBAAR", actief: true, vraagprijs: 319000, transactieprijs: null, transactiedatum: null, transportdatum: null,
+      publicatiedatum: "2026-09-30", gekoppeldeMakelaarCode: "108886", realworksGewijzigdOp: "2026-09-30 13:47:09",
+    });
+  });
+
+  it("kort datums met tijd in tot de datum en laat lege toevoegingen weg", () => {
+    const o = naarObject({ ...wonenObject(2, { status: "VERKOCHT", transactieprijs: 310000, transactiedatum: "2026-08-14 00:00:00", transportdatum: "2026-10-01" }), adres: { straat: "Proeflaan", huisnummer: { hoofdnummer: 8, toevoeging: "" }, postcode: "4702 BB", plaats: "ROOSENDAAL" } });
+    expect(o).toMatchObject({ transactiedatum: "2026-08-14", transportdatum: "2026-10-01", transactieprijs: 310000, huisnummertoevoeging: null });
+  });
+
+  it("verdraagt ontbrekende secties", () => {
+    expect(naarObject({ id: 3 })).toMatchObject({ realworksId: 3, straat: null, status: null, vraagprijs: null, actief: null });
+  });
+
+  it("weigert een object zonder id", () => {
+    expect(() => naarObject({ adres: {} })).toThrow(/id/);
+  });
+});
+
+describe("naarMedewerker", () => {
+  it("bouwt de weergavenaam uit roepnaam, tussenvoegsel en achternaam", () => {
+    expect(naarMedewerker({ id: 21561647, roepnaam: "Sam", tussenvoegsel: "van", achternaam: "Voorbeeld" })).toEqual({
+      realworksId: 21561647, weergavenaam: "Sam van Voorbeeld", roepnaam: "Sam", tussenvoegsel: "van", achternaam: "Voorbeeld",
+    });
+    expect(naarMedewerker({ id: 5, roepnaam: "", tussenvoegsel: null, achternaam: "Test" }).weergavenaam).toBe("Test");
+    expect(naarMedewerker({ id: 6 }).weergavenaam).toBe("Medewerker 6");
+  });
+});
+
+describe("haalWonenObjecten", () => {
+  it("volgt de paginering en stuurt het rwauth-token mee", async () => {
+    const fetch = vi.fn()
+      .mockResolvedValueOnce(antwoord({ resultaten: [wonenObject(1), wonenObject(2)], paginering: { volgende: "https://api.realworks.nl/wonen/v3/objecten?aantal=2&vanaf=2", totaalAantal: 3 } }))
+      .mockResolvedValueOnce(antwoord({ resultaten: [wonenObject(3)], paginering: { totaalAantal: 3 } }));
+    const paginas = [];
+    for await (const pagina of haalWonenObjecten({ token: async () => "geheim", fetch }, { aantal: 2 })) paginas.push(pagina);
+
+    expect(paginas.map((p) => p.objecten.map((o) => o.realworksId))).toEqual([[1, 2], [3]]);
+    expect(paginas[0]?.totaal).toBe(3);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[0]![0]).toBe("https://api.realworks.nl/wonen/v3/objecten?aantal=2");
+    expect(fetch.mock.calls[1]![0]).toBe("https://api.realworks.nl/wonen/v3/objecten?aantal=2&vanaf=2");
+    expect(fetch.mock.calls[0]![1].headers.Authorization).toBe("rwauth geheim");
+  });
+
+  it("volgt geen paginering naar een andere host", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(antwoord({ resultaten: [wonenObject(1)], paginering: { volgende: "https://elders.example/wonen?vanaf=1" } }));
+    await expect(async () => {
+      for await (const pagina of haalWonenObjecten({ token: async () => "geheim", fetch })) void pagina;
+    }).rejects.toThrow(/host/);
+  });
+
+  it("geeft bij een fout de status en het pad, zonder de inhoud van het antwoord of het token", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(antwoord({ error: "Voor dit token is een IP bereik opgegeven, persoon@voorbeeld.nl" }, 403));
+    const poging = (async () => {
+      for await (const pagina of haalWonenObjecten({ token: async () => "geheim", fetch })) void pagina;
+    })();
+    await expect(poging).rejects.toBeInstanceOf(RealworksFout);
+    await expect(poging).rejects.toMatchObject({ status: 403, message: expect.not.stringContaining("voorbeeld.nl") });
+    await expect(poging).rejects.toMatchObject({ message: expect.not.stringContaining("geheim") });
+  });
+});
+
+describe("haalMedewerkers", () => {
+  it("haalt alle medewerkers op", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(antwoord({ resultaten: [{ id: 1, roepnaam: "A", achternaam: "B" }], paginering: { totaalAantal: 1 } }));
+    const medewerkers = await haalMedewerkers({ token: async () => "geheim", fetch });
+    expect(medewerkers).toHaveLength(1);
+    expect(fetch.mock.calls[0]![0]).toBe("https://api.realworks.nl/relaties/v1/medewerker?aantal=100");
+  });
+});

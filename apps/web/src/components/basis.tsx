@@ -39,7 +39,7 @@ export function TrendPil({ verschil, omschrijving }: { verschil: number; omschri
   );
 }
 
-export function KpiTegel({ label, waarde, verschil, vergelijking, toelichting }: { label: string; waarde: string; verschil?: number; vergelijking?: string; toelichting?: string }) {
+export function KpiTegel({ label, waarde, verschil, vergelijking, toelichting }: { label: string; waarde: string; verschil?: number | undefined; vergelijking?: string; toelichting?: string }) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-6">
       <p className="text-label text-text-muted">{label}</p>
@@ -64,9 +64,9 @@ export function Label({ soort, children }: { soort: keyof typeof statusStijl; ch
   return <span className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-caption ${statusStijl[soort]}`}>{children}</span>;
 }
 
-export function Melding({ titel, children }: { titel: string; children: React.ReactNode }) {
+export function Melding({ titel, children, soort = "info" }: { titel: string; children: React.ReactNode; soort?: "info" | "fout" }) {
   return (
-    <div role="note" className="flex gap-3 rounded-lg border border-border bg-info-bg p-4 text-info-fg">
+    <div role={soort === "fout" ? "alert" : "note"} className={`flex gap-3 rounded-lg border border-border p-4 ${soort === "fout" ? "bg-fout-bg text-fout-fg" : "bg-info-bg text-info-fg"}`}>
       <Info aria-hidden size={20} strokeWidth={1.75} className="mt-0.5 shrink-0" />
       <div>
         <p className="text-label">{titel}</p>

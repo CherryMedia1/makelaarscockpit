@@ -11,7 +11,7 @@ export type VerkoopInvoer = {
   verkoopprijs: number | null;
   /** Afgesproken courtage; null als er geen courtage is, zoals bij een taxatie. */
   courtage: Courtage | null;
-  /** Opstartnota of vaste nota (incl. btw); 0 als die er niet is. */
+  /** Opstartnota of vaste nota (incl. btw); 0 als die er niet is, negatief bij een verrekening. */
   opstartnota: number;
   /** Aandeel van de makelaar in deze verkoop: 1 voor volledig, 0,5 bij een gedeelde verkoop. */
   aandeel: number;
@@ -54,7 +54,7 @@ export function courtageBedrag(invoer: Pick<VerkoopInvoer, "verkoopprijs" | "cou
 }
 
 export function berekenVerkoop(invoer: VerkoopInvoer): VerkoopUitkomst {
-  eisNietNegatief("opstartnota", invoer.opstartnota);
+  if (!Number.isFinite(invoer.opstartnota)) throw new RangeError(`opstartnota moet een getal zijn, kreeg ${invoer.opstartnota}`);
   if (!Number.isFinite(invoer.aandeel) || invoer.aandeel <= 0 || invoer.aandeel > 1) {
     throw new RangeError(`aandeel moet groter dan 0 en hoogstens 1 zijn, kreeg ${invoer.aandeel}`);
   }
