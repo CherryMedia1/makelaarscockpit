@@ -17,13 +17,17 @@ const regels: VerkoopRegel[] = [
   regel({ verkoopdatum: "2025-01-15", omzetMaand: "2025-02-01" }),
   regel({ verkoopdatum: "2025-12-15", omzetMaand: "2026-01-01" }),
   regel({ verkoopdatum: "2026-03-02", omzetMaand: null }),
+  // Uit Realworks, courtage nog niet ingevuld: telt als verkocht, nog zonder omzet.
+  regel({ verkoopdatum: "2026-03-05", omzetMaand: "2026-04-01", courtage: null, herkomst: "koppeling" }),
+  // Oudere verkoop zonder courtage: valt buiten het jaar en telt niet als "nog in te vullen".
+  regel({ verkoopdatum: "2025-06-05", omzetMaand: "2025-07-01", courtage: null, herkomst: "koppeling" }),
 ];
 
 const d = verkoopDashboard({ regels, doelen: [{ jaar: 2026, maand: 1, waarde: 1500 }, { jaar: 2026, maand: 2, waarde: 1500 }], jaar: 2026, totEnMetMaand: 3 });
 
 describe("verkoopDashboard", () => {
   it("telt verkochte woningen per verkoopmaand; een gedeelde verkoop telt samen als één, een taxatie niet", () => {
-    expect(d.verkochtPerMaand.ditJaar.slice(0, 4)).toEqual([2, 1, 1, null]);
+    expect(d.verkochtPerMaand.ditJaar.slice(0, 4)).toEqual([2, 1, 2, null]);
     expect(d.verkochtPerMaand.vorigJaar[0]).toBe(1);
     expect(d.verkochtPerMaand.vorigJaar[11]).toBe(1);
   });
@@ -48,17 +52,21 @@ describe("verkoopDashboard", () => {
 
   it("verdeelt omzet en aantallen per makelaar, gesorteerd op omzet", () => {
     expect(d.perMakelaar).toEqual([
-      { naam: "A", omzetExBtw: expect.closeTo(3000, 6), verkocht: 2.5 },
+      { naam: "A", omzetExBtw: expect.closeTo(3000, 6), verkocht: 3.5 },
       { naam: "B", omzetExBtw: expect.closeTo(1500, 6), verkocht: 1.5 },
     ]);
   });
 
   it("rekent de kerncijfers over dezelfde maanden in beide jaren", () => {
-    expect(d.kern.verkocht).toBe(4);
+    expect(d.kern.verkocht).toBe(5);
     expect(d.kern.verkochtVorigJaar).toBe(1);
     expect(d.kern.omzet).toBeCloseTo(4500, 6);
     expect(d.kern.omzetVorigJaar).toBeCloseTo(1000, 6);
     expect(d.kern.doel).toBe(3000);
     expect(d.kern.nogZonderPasseermaand).toBe(1);
+  });
+
+  it("telt verkopen van dit jaar waarvan de courtage nog ingevuld moet worden", () => {
+    expect(d.kern.nogZonderCourtage).toBe(1);
   });
 });

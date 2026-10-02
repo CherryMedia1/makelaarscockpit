@@ -2,6 +2,8 @@
 
 export type MedewerkerGegevens = {
   realworksId: number;
+  /** Relatiecode (bv. '116177'); een Wonen-object verwijst hiermee naar de gekoppelde makelaar. */
+  relatiecode: string | null;
   weergavenaam: string;
   roepnaam: string | null;
   tussenvoegsel: string | null;

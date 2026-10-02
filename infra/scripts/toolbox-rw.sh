@@ -18,7 +18,24 @@ if [[ "${1:-}" == "multi" ]]; then
   for PAD in "$@"; do
     TOKEN=$(token_voor "$TENANT" "$PAD")
     code=$(curl -s -o /tmp/rw.json -w "%{http_code}" -H "Authorization: rwauth $TOKEN" -H "Accept: application/json" "https://api.realworks.nl$PAD")
-    printf "%-52s HTTP %s  %s\n" "$PAD" "$code" "$(head -c 110 /tmp/rw.json | tr '\n' ' ')"
+    # Samenvatting: aantal resultaten en de paginering, of het begin van een foutmelding.
+    samenvatting=$(python3 -c '
+import json, sys
+raw = open("/tmp/rw.json", "rb").read().decode("utf-8", "replace")
+try:
+    d = json.loads(raw)
+except Exception:
+    print(raw[:110].replace("\n", " ")); sys.exit()
+if isinstance(d, dict) and "resultaten" in d:
+    p = d.get("paginering") or {}
+    volgende = "ja" if p.get("volgende") else "nee"
+    print("resultaten=%d totaalAantal=%s volgende=%s" % (len(d["resultaten"]), p.get("totaalAantal"), volgende))
+elif isinstance(d, list):
+    print("lijst van %d" % len(d))
+else:
+    print(raw[:110].replace("\n", " "))
+')
+    printf "%-60s HTTP %s  %s\n" "$PAD" "$code" "$samenvatting"
   done
   exit 0
 fi

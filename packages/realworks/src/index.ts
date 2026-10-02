@@ -98,7 +98,7 @@ export function naarMedewerker(ruw: unknown): MedewerkerGegevens {
   const tussenvoegsel = tekst(m.tussenvoegsel);
   const achternaam = tekst(m.achternaam);
   const naam = [roepnaam, tussenvoegsel, achternaam].filter(Boolean).join(" ");
-  return { realworksId: id, weergavenaam: naam || `Medewerker ${id}`, roepnaam, tussenvoegsel, achternaam };
+  return { realworksId: id, relatiecode: tekst(object(m.overige).relatiecode), weergavenaam: naam || `Medewerker ${id}`, roepnaam, tussenvoegsel, achternaam };
 }
 
 export type ObjectenPagina = { objecten: ObjectGegevens[]; ruw: unknown[]; totaal: number | null };

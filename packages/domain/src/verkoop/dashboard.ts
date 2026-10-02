@@ -32,6 +32,8 @@ export type VerkoopDashboardCijfers = {
     doel: number;
     /** Regels die dit jaar verkocht zijn maar nog geen passeermaand hebben en dus nog niet in de omzet tellen. */
     nogZonderPasseermaand: number;
+    /** Woningen die dit jaar verkocht zijn en waarvan de courtage nog niet is ingevuld (meestal uit de Realworks-koppeling). */
+    nogZonderCourtage: number;
   };
 };
 
@@ -46,6 +48,7 @@ export function verkoopDashboard({ regels, doelen, jaar, totEnMetMaand }: Verkoo
   const makelaars = new Map<string, { omzetExBtw: number; verkocht: number }>();
   const makelaar = (naam: string) => makelaars.get(naam) ?? makelaars.set(naam, { omzetExBtw: 0, verkocht: 0 }).get(naam)!;
   let nogZonderPasseermaand = 0;
+  let nogZonderCourtage = 0;
 
   for (const regel of regels) {
     const bedrag = berekenVerkoop(regel).omzetTotaalExBtw;
@@ -61,6 +64,7 @@ export function verkoopDashboard({ regels, doelen, jaar, totEnMetMaand }: Verkoo
       if (verkoop.jaar === jaar && verkoop.maand <= totEnMetMaand) {
         if (TELT_ALS_WONING.has(regel.soort)) makelaar(regel.makelaar).verkocht += regel.aandeel;
         if (!passeren) nogZonderPasseermaand += 1;
+        if (regel.courtage === null && TELT_ALS_WONING.has(regel.soort)) nogZonderCourtage += 1;
       }
     }
     if (passeren) {
@@ -91,6 +95,7 @@ export function verkoopDashboard({ regels, doelen, jaar, totEnMetMaand }: Verkoo
       omzetVorigJaar: som(omzet.vorig),
       doel: doel.slice(0, totEnMetMaand).reduce<number>((t, w) => t + (w ?? 0), 0),
       nogZonderPasseermaand,
+      nogZonderCourtage,
     },
   };
 }
