@@ -15,6 +15,9 @@ export type VerkochteWoning = {
   verkoopprijs: number | null;
   omzetExBtw: number;
   gedeeld: boolean;
+  /** Uit de Realworks-koppeling; de courtage moet nog in het portaal worden ingevuld. */
+  courtageOntbreekt: boolean;
+  onderVoorbehoud: boolean;
 };
 
 export type VerkoopDashboard = {
@@ -25,7 +28,15 @@ export type VerkoopDashboard = {
   omzetPerMaand: { ditJaar: (number | null)[]; vorigJaar: number[]; doel: (number | null)[] };
   perMakelaar: { naam: string; omzetExBtw: number; verkocht: number }[];
   recent: VerkochteWoning[];
-  kern: { verkocht: number; verkochtVorigJaar: number; omzet: number; omzetVorigJaar: number; doel: number; nogZonderPasseermaand: number };
+  kern: {
+    verkocht: number;
+    verkochtVorigJaar: number;
+    omzet: number;
+    omzetVorigJaar: number;
+    doel: number;
+    nogZonderPasseermaand: number;
+    nogZonderCourtage: number;
+  };
 };
 
 export function kerncijfers(d: VerkoopDashboard) {
@@ -68,6 +79,8 @@ function recentVerkocht(regels: VerkoopRegel[], aantal: number): VerkochteWoning
       verkoopprijs: r.verkoopprijs,
       omzetExBtw: berekenVerkoop(r).omzetTotaalExBtw,
       gedeeld: r.aandeel < 1,
+      courtageOntbreekt: r.courtage === null && r.herkomst === "koppeling",
+      onderVoorbehoud: r.onderVoorbehoud === true,
     }));
 }
 
@@ -98,6 +111,7 @@ function voorbeeld(): VerkoopDashboard {
   const n = null;
   const woning = (adres: string, makelaar: string, maand: number, prijs: number, omzet: number, passeren: Date | null): VerkochteWoning => ({
     id: adres, adres, makelaar, verkoopmaand: new Date(2026, maand, 1), passeerdatum: passeren, verkoopprijs: prijs, omzetExBtw: omzet, gedeeld: false,
+    courtageOntbreekt: false, onderVoorbehoud: false,
   });
   return {
     isVoorbeeld: true,
@@ -122,6 +136,6 @@ function voorbeeld(): VerkoopDashboard {
       woning("Demoplein 3", "Makelaar A", 8, 579_000, 6_712, new Date(2026, 8, 25)),
       woning("Testweg 41", "Makelaar C", 8, 289_000, 3_596, null),
     ],
-    kern: { verkocht: 386, verkochtVorigJaar: 333, omzet: 1_840_400, omzetVorigJaar: 1_550_200, doel: 1_800_000, nogZonderPasseermaand: 0 },
+    kern: { verkocht: 386, verkochtVorigJaar: 333, omzet: 1_840_400, omzetVorigJaar: 1_550_200, doel: 1_800_000, nogZonderPasseermaand: 0, nogZonderCourtage: 0 },
   };
 }

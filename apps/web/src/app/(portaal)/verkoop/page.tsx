@@ -57,6 +57,12 @@ export default async function VerkoopEnOmzet() {
         <KpiTegel label="Gemiddelde omzet per woning" waarde={euro(k.perWoning)} verschil={k.perWoningVerschil} vergelijking={`t.o.v. ${vorig}`} />
       </div>
 
+      {d.kern.nogZonderCourtage > 0 && (
+        <Melding titel={`${d.kern.nogZonderCourtage} ${d.kern.nogZonderCourtage === 1 ? "verkoop wacht" : "verkopen wachten"} op de courtage`}>
+          Deze woningen komen uit Realworks. Zodra de afgesproken courtage en de opstartnota zijn ingevuld, tellen ze mee in de omzet.
+        </Melding>
+      )}
+
       {d.kern.nogZonderPasseermaand > 0 && (
         <Melding titel={`${d.kern.nogZonderPasseermaand} verkopen tellen nog niet mee in de omzet`}>
           Bij deze verkopen van dit jaar is de maand van passeren nog niet ingevuld. Ze tellen wel mee bij &ldquo;Woningen verkocht&rdquo;.
@@ -115,9 +121,14 @@ export default async function VerkoopEnOmzet() {
                       {w.makelaar}
                       {w.gedeeld && <span className="text-text-muted"> · gedeeld</span>}
                     </td>
-                    <td className="whitespace-nowrap px-3">{maandJaar(w.verkoopmaand)}</td>
+                    <td className="whitespace-nowrap px-3">
+                      {maandJaar(w.verkoopmaand)}
+                      {w.onderVoorbehoud && <span className="text-text-muted"> · onder voorbehoud</span>}
+                    </td>
                     <td className="whitespace-nowrap px-3 text-right tabular-nums">{w.verkoopprijs === null ? "" : euro(w.verkoopprijs)}</td>
-                    <td className="whitespace-nowrap px-3 text-right tabular-nums">{euro(w.omzetExBtw)}</td>
+                    <td className="whitespace-nowrap px-3 text-right tabular-nums">
+                      {w.courtageOntbreekt ? <Label soort="neutraal">courtage invullen</Label> : euro(w.omzetExBtw)}
+                    </td>
                     <td className="whitespace-nowrap px-6">
                       {w.passeerdatum === null ? (
                         <Label soort="neutraal">nog onbekend</Label>

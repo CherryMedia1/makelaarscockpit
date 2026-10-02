@@ -264,19 +264,24 @@ resource migratieJob 'Microsoft.App/jobs@2026-01-01' = {
   }
 }
 
-// Sync en import als handmatig te starten jobs (ADR-008). Beide gaan via het vaste NAT-IP naar buiten.
+// Sync, import en gebruikersbeheer als jobs (ADR-008). Ze gaan via het vaste NAT-IP naar buiten.
+// De sync draait daarnaast dagelijks (ADR-010): Realworks toont een verkochte woning alleen tot die in het archief gaat.
+// Tijd in UTC: 05:00 UTC is 07:00 in de zomer en 06:00 in de winter. In de zuinige stand (Postgres gestopt) mislukt de run; dat is bedoeld.
 var jobs = [
   {
     naam: 'sync'
     commando: 'sync-realworks'
+    schema: '0 5 * * *'
   }
   {
     naam: 'import'
     commando: 'import-verkooplijst'
+    schema: ''
   }
   {
     naam: 'gebruikers'
     commando: 'gebruikers-bijwerken'
+    schema: ''
   }
 ]
 
@@ -295,10 +300,15 @@ resource taakJobs 'Microsoft.App/jobs@2026-01-01' = [
       environmentId: containerAppsEnv.id
       workloadProfileName: 'Consumption'
       configuration: {
-        triggerType: 'Manual'
+        triggerType: empty(job.schema) ? 'Manual' : 'Schedule'
         replicaTimeout: 900
         replicaRetryLimit: 0
-        manualTriggerConfig: {
+        manualTriggerConfig: empty(job.schema) ? {
+          parallelism: 1
+          replicaCompletionCount: 1
+        } : null
+        scheduleTriggerConfig: empty(job.schema) ? null : {
+          cronExpression: job.schema
           parallelism: 1
           replicaCompletionCount: 1
         }

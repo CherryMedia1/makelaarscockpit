@@ -20,9 +20,14 @@ export type ExcelRij = {
   courtage: number | null;
 };
 
+export type VerkoopHerkomst = "handmatig" | "import" | "koppeling";
+
 /** Een verkoop of andere omzetregel met het aandeel van één makelaar; datums als 'JJJJ-MM-DD'. */
 export type VerkoopRegel = VerkoopInvoer & {
   importRij?: number;
+  herkomst?: VerkoopHerkomst;
+  /** Verkocht onder voorbehoud (nog ontbindende voorwaarden); telt wel mee, zoals in de Excel. */
+  onderVoorbehoud?: boolean;
   soort: VerkoopSoort;
   adres: string | null;
   makelaar: string;
