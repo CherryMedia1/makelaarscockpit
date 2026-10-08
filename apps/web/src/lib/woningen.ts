@@ -2,7 +2,7 @@
 import "server-only";
 import { connection } from "next/server";
 import { leesMedewerkerKeuzes, leesWoningen, type MedewerkerKeuze, type WoningOpBord } from "@makelaarscockpit/db";
-import { bepaalStappen, type RealworksSignalen, type Spoor } from "@makelaarscockpit/domain";
+import { bepaalStappen, spoorVanFase, type RealworksSignalen, type Spoor } from "@makelaarscockpit/domain";
 import { heeftDatabase, metHuidigeTenant } from "./gegevens";
 
 export type { MedewerkerKeuze, WoningOpBord };
@@ -17,18 +17,25 @@ export async function haalWoningenBord(spoor: Spoor): Promise<{ woningen: Woning
   return { woningen, isVoorbeeld: false, vandaag };
 }
 
-export async function haalWoning(spoor: Spoor, id: string): Promise<{ woning: WoningOpBord | null; medewerkers: MedewerkerKeuze[]; vandaag: string }> {
+/**
+ * Eén woning met de stappen van het spoor waarin ze nu zit. Bij een verkochte woning komen ook de stappen van het
+ * verkoopspoor mee, om terug te kijken.
+ */
+export async function haalWoning(id: string): Promise<{ woning: WoningOpBord | null; spoor: Spoor; eerder: WoningOpBord | null; medewerkers: MedewerkerKeuze[] }> {
   await connection();
   const vandaag = vandaagInNederland();
-  if (!heeftDatabase()) return { woning: null, medewerkers: [], vandaag };
-  return metHuidigeTenant(async (tx, sessie) => ({
-    woning: (await leesWoningen(tx, sessie.tenantId, spoor, vandaag, id))[0] ?? null,
-    medewerkers: await leesMedewerkerKeuzes(tx, sessie.tenantId),
-    vandaag,
-  }));
+  if (!heeftDatabase()) return { woning: null, spoor: "verkoop", eerder: null, medewerkers: [] };
+  return metHuidigeTenant(async (tx, sessie) => {
+    const verkoop = (await leesWoningen(tx, sessie.tenantId, "verkoop", vandaag, id))[0] ?? null;
+    const medewerkers = await leesMedewerkerKeuzes(tx, sessie.tenantId);
+    if (!verkoop || spoorVanFase(verkoop.fase) === "verkoop") return { woning: verkoop, spoor: "verkoop" as const, eerder: null, medewerkers };
+    const kovk = (await leesWoningen(tx, sessie.tenantId, "kovk", vandaag, id))[0] ?? null;
+    return { woning: kovk, spoor: "kovk" as const, eerder: verkoop, medewerkers };
+  });
 }
 
 function voorbeeld(spoor: Spoor, vandaag: string): WoningOpBord[] {
+  if (spoor === "kovk") return [];
   const leeg: RealworksSignalen = { heeftFotos: false, heeftPlattegrond: false, energieklasse: null, heeftTekst: false, publicatiedatum: null, transportdatum: null, agenda: [] };
   const woning = (n: number, fase: WoningOpBord["fase"], signalen: Partial<RealworksSignalen>, klaar: string[]): WoningOpBord => ({
     id: String(n), projectcode: `VB${n}`, adres: `Voorbeeldstraat ${n}`, plaats: "Voorbeeldstad", vraagprijs: 300_000 + n * 25_000,

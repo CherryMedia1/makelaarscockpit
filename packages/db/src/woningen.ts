@@ -104,9 +104,12 @@ export type WoningOpBord = {
   stappen: StapUitkomst[];
 };
 
-const FASES: Record<Spoor, WoningFase[]> = { verkoop: ["voorbereiding", "in_verkoop"] };
+const FASES: Record<Spoor, WoningFase[]> = { verkoop: ["voorbereiding", "in_verkoop"], kovk: ["verkocht_ov", "verkocht"] };
 
-/** De woningen op het bord van een spoor, met per stap de stand (Realworks, handmatig of open). */
+/**
+ * De woningen op het bord van een spoor, met per stap de stand (Realworks, handmatig of open). Met `alleenId` komt die ene
+ * woning terug met de stappen van het gevraagde spoor, ongeacht haar fase.
+ */
 export async function leesWoningen(tx: Tx, tenantId: string, spoor: Spoor, vandaag: string, alleenId: string | null = null): Promise<WoningOpBord[]> {
   const { rows } = await tx.query(
     `select w.id, w.projectcode, w.adres, w.plaats, w.vraagprijs, w.makelaar_naam, w.backoffice_medewerker_id, w.fase,
@@ -117,7 +120,7 @@ export async function leesWoningen(tx: Tx, tenantId: string, spoor: Spoor, vanda
        from woning w
        left join object o on o.id = w.object_id and o.tenant_id = w.tenant_id
        left join medewerker b on b.id = w.backoffice_medewerker_id and b.tenant_id = w.tenant_id
-      where w.tenant_id = $1 and w.zichtbaar and w.fase = any($2) and ($3::uuid is null or w.id = $3)
+      where w.tenant_id = $1 and w.zichtbaar and (($3::uuid is null and w.fase = any($2)) or w.id = $3)
       order by w.fase, w.adres`,
     [tenantId, FASES[spoor], alleenId],
   );
@@ -183,7 +186,10 @@ export type WoningImportRij = { adres: string; backoffice: string | null; stappe
 export async function importeerWoningStappen(tx: Tx, tenantId: string, spoor: Spoor, rijen: WoningImportRij[]): Promise<{ gekoppeld: number; nietGevonden: number; stappen: number; backoffice: number }> {
   const geldig = new Set(stappenVoorSpoor(spoor).map((s) => s.sleutel));
   await tx.query("delete from woning_stap where tenant_id = $1 and herkomst = 'import' and stap = any($2)", [tenantId, [...geldig]]);
-  const woningen = await tx.query("select id, adres, plaats, backoffice_medewerker_id from woning where tenant_id = $1 and zichtbaar and adres is not null", [tenantId]);
+  const woningen = await tx.query(
+    "select id, adres, plaats, backoffice_medewerker_id from woning where tenant_id = $1 and zichtbaar and adres is not null and fase = any($2)",
+    [tenantId, spoor === "kovk" ? FASES.kovk : [...FASES.verkoop, ...FASES.kovk]],
+  );
   const uitkomst = { gekoppeld: 0, nietGevonden: 0, stappen: 0, backoffice: 0 };
   const gebruikt = new Set<string>();
   for (const rij of rijen) {

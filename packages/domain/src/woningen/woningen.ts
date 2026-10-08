@@ -2,7 +2,8 @@
 // Realworks is leidend: wat Realworks kan zien (foto's, energielabel, tekst, publicatie, afspraken) wordt automatisch
 // afgevinkt en is niet met de hand terug te zetten. De overige stappen zijn eigen invoer.
 
-export type Spoor = "verkoop";
+/** Het bord kent twee sporen: verkoopklaar maken en, na de verkoop, de koopovereenkomst. */
+export type Spoor = "verkoop" | "kovk";
 export type StapStatus = "open" | "gepland" | "klaar" | "nvt";
 export const STAP_STATUSSEN: readonly StapStatus[] = ["open", "gepland", "klaar", "nvt"];
 export const STAP_STATUS_LABEL: Record<StapStatus, string> = { open: "Open", gepland: "Gepland", klaar: "Klaar", nvt: "Niet van toepassing" };
@@ -21,9 +22,18 @@ export const STAPPEN: readonly StapDefinitie[] = [
   { sleutel: "reel", label: "Reel", kort: "Reel", spoor: "verkoop", realworks: false },
   { sleutel: "bord", label: "Bord geplaatst", kort: "Bord", spoor: "verkoop", realworks: true },
   { sleutel: "verkoopgesprek", label: "Verkoopgesprek", kort: "Gesprek", spoor: "verkoop", realworks: true },
+  // Excel-tabblad "Status kovks".
+  { sleutel: "toegang_move", label: "Toegang tot Move", kort: "Move", spoor: "kovk", realworks: false },
+  { sleutel: "bieders_afgebeld", label: "Bieders afgebeld", kort: "Bieders", spoor: "kovk", realworks: false },
+  { sleutel: "kovk_opgemaakt", label: "Koopovereenkomst opgemaakt en rondgestuurd", kort: "Opgemaakt", spoor: "kovk", realworks: false },
+  { sleutel: "kovk_akkoord", label: "Koopovereenkomst akkoord", kort: "Akkoord", spoor: "kovk", realworks: false },
+  { sleutel: "kovk_getekend", label: "Koopovereenkomst getekend", kort: "Getekend", spoor: "kovk", realworks: true },
+  { sleutel: "bedenktijd", label: "Bedenktijd verlopen", kort: "Bedenktijd", spoor: "kovk", realworks: false },
+  { sleutel: "overdracht", label: "Overdracht bij de notaris", kort: "Overdracht", spoor: "kovk", realworks: true },
 ];
 
 export const stappenVoorSpoor = (spoor: Spoor): StapDefinitie[] => STAPPEN.filter((s) => s.spoor === spoor);
+export const spoorVanStap = (sleutel: string): Spoor | null => STAPPEN.find((s) => s.sleutel === sleutel)?.spoor ?? null;
 
 /** Een afspraak uit de Realworks-agenda die bij de woning hoort; datum als 'JJJJ-MM-DD'. */
 export type AgendaSignaal = { type: string; datum: string; status: string | null };
@@ -78,6 +88,12 @@ function uitRealworks(sleutel: string, s: RealworksSignalen, vandaag: string): S
       return uitAgenda(s.agenda, "Bord plaatsen", vandaag, true);
     case "verkoopgesprek":
       return uitAgenda(s.agenda, "Verkoopgesprek", vandaag, true);
+    case "kovk_getekend":
+      // Een tekenafspraak die geweest is, zegt niet dat er getekend is; dat zet de medewerker zelf.
+      return uitAgenda(s.agenda, "Tekenafspraak", vandaag, false);
+    case "overdracht":
+      if (s.transportdatum) return { status: s.transportdatum <= vandaag ? "klaar" : "gepland", datum: s.transportdatum };
+      return uitAgenda(s.agenda, "Overdracht notaris", vandaag, false);
     default:
       return null;
   }
@@ -93,6 +109,10 @@ export function bepaalStappen(spoor: Spoor, signalen: RealworksSignalen, handmat
     if (rw?.status === "klaar") return { sleutel, status: "klaar", datum: rw.datum, bron: "realworks", teLaat: false };
     const eigen = handmatig.find((h) => h.stap === sleutel && h.status !== "open");
     if (eigen) {
+      // De bedenktijd loopt vanzelf af: na de ingevulde datum is de stap klaar.
+      if (sleutel === "bedenktijd" && eigen.status === "gepland" && eigen.datum !== null && eigen.datum < vandaag) {
+        return { sleutel, status: "klaar", datum: eigen.datum, bron: "handmatig", teLaat: false };
+      }
       return { sleutel, status: eigen.status, datum: eigen.datum, bron: "handmatig", teLaat: eigen.status === "gepland" && eigen.datum !== null && eigen.datum < vandaag };
     }
     if (rw) return { sleutel, status: "gepland", datum: rw.datum, bron: "realworks", teLaat: false };
@@ -107,6 +127,8 @@ export function voortgang(stappen: readonly StapUitkomst[]): { afgerond: number;
 
 export type WoningFase = "voorbereiding" | "in_verkoop" | "verkocht_ov" | "verkocht";
 export const WONING_FASE_LABEL: Record<WoningFase, string> = { voorbereiding: "In voorbereiding", in_verkoop: "In verkoop", verkocht_ov: "Verkocht onder voorbehoud", verkocht: "Verkocht" };
+
+export const spoorVanFase = (fase: WoningFase): Spoor => (fase === "verkocht_ov" || fase === "verkocht" ? "kovk" : "verkoop");
 
 /** De fase van een woning die Realworks als object kent; null = niet op het bord (ingetrokken, verhuurd). */
 export function faseVanObject(status: string | null): WoningFase | null {
