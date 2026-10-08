@@ -1,13 +1,12 @@
-// Eenmalige import van het Excel-tabblad "Waardebepaallijst <jaar>" (issue #9): de uitkomst per waardebepaling
-// (gewonnen, verloren, ...) uit de Excel wordt gekoppeld aan de agendapunten uit Realworks op datum en adres.
+// Import van het Excel-tabblad "Waardebepaallijst <jaar>" (issue #9, ADR-011): de uitkomst per waardebepaling
+// (gewonnen, verloren, ...) uit de Excel vult de agendapunten uit Realworks aan, op adres en datum. Realworks is leidend:
+// rijen zonder agendapunt worden niet toegevoegd.
 // Leest uit de blob-container `import` (of lokaal via IMPORT_BESTAND). Geen adressen of namen in de log.
 import { readFile } from "node:fs/promises";
 import ExcelJS from "exceljs";
 import { importeerWaardebepalingen, maakDb, metTenant, zoekTenant } from "@makelaarscockpit/db";
 import { excelRijNaarWaardebepaling, type ExcelWaardebepalingRij, type WaardebepalingImport } from "@makelaarscockpit/domain";
 import { leesBlob, omgeving } from "./azure";
-
-const BRON = "waardebepaallijst-excel";
 
 type Cel = ExcelJS.CellValue;
 
@@ -75,8 +74,14 @@ export async function importWaardebepalingen(): Promise<void> {
   const db = maakDb();
   try {
     const tenant = await zoekTenant(db, tenantSleutel);
-    const uitkomst = await metTenant(db, tenant.id, (tx) => importeerWaardebepalingen(tx, tenant.id, BRON, regels));
-    console.log(`weggeschreven voor tenant ${tenant.sleutel}: ${uitkomst.gekoppeld} gekoppeld aan een agendapunt uit Realworks, ${uitkomst.toegevoegd} als eigen regel toegevoegd`);
+    const u = await metTenant(db, tenant.id, (tx) => importeerWaardebepalingen(tx, tenant.id, regels));
+    console.log(
+      `weggeschreven voor tenant ${tenant.sleutel}: ${u.gekoppeld} gekoppeld aan een agendapunt uit Realworks ` +
+        `(${u.zelfdeDag} op dezelfde dag, ${u.binnenEenWeek} binnen een week, ${u.binnenVenster} binnen een maand); ` +
+        `${u.nietInRealworks} niet in Realworks en niet overgenomen; ${u.gewonnenVolgensRealworks} blijven gewonnen volgens Realworks; ` +
+        `${u.handmatigBehouden} met de hand gezet en behouden`,
+    );
+    // Rijnummers van de niet-gevonden rijen staan niet in de log; zoek ze in de Excel op adres als C&R ze wil nalopen.
   } finally {
     await db.end();
   }

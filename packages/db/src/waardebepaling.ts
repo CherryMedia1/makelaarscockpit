@@ -1,6 +1,6 @@
 // Waardebepalingen (issue #9). Altijd binnen metTenant, met filter op tenant_id. Alleen id's in logs.
 import {
-  leesLocatie, locatieBevatAdres, pastBijObject,
+  kiesAgendapunt, leesLocatie, pastBijObject,
   type ObjectVoorKoppeling, type Waardebepaling, type WaardebepalingImport, type WaardebepalingInvoer, type WaardebepalingStatus, type WaardebepalingUitRealworks,
 } from "@makelaarscockpit/domain";
 import type { Tx } from "./verbinding";
@@ -85,37 +85,80 @@ export async function bewaarWaardebepalingInvoer(tx: Tx, tenantId: string, id: s
   return (rowCount ?? 0) > 0;
 }
 
+export type WaardebepalingImportUitkomst = {
+  gekoppeld: number;
+  zelfdeDag: number;
+  binnenEenWeek: number;
+  binnenVenster: number;
+  /** Excel-rijen zonder agendapunt in Realworks; die tellen niet mee (Realworks is leidend). */
+  nietInRealworks: number;
+  /** Rijen waar Realworks de woning al in de verkoop heeft; de status blijft gewonnen. */
+  gewonnenVolgensRealworks: number;
+  handmatigBehouden: number;
+};
+
+/** Hoeveel dagen de Excel-datum van de afspraak in Realworks mag afwijken. */
+const VENSTER_DAGEN = 31;
+
 /**
- * Eenmalige import van de Excel "Waardebepaallijst": een rij die op datum en adres bij een agendapunt uit Realworks past,
- * geeft dat agendapunt zijn uitkomst (tenzij die al met de hand is gezet); de rest komt als eigen regel erbij.
+ * Import van de Excel "Waardebepaallijst" (ADR-011). Realworks is leidend: alleen agendapunten tellen als waardebepaling.
+ * Een Excel-rij vult bij het agendapunt met hetzelfde adres (eerst op dezelfde dag, daarna het dichtstbijzijnde binnen het
+ * venster) de uitkomst aan. Staat de woning volgens Realworks in de verkoop, dan blijft de status gewonnen. Een met de hand
+ * gezette status blijft staan. Rijen zonder agendapunt worden niet toegevoegd. Herhaalbaar.
  */
-export async function importeerWaardebepalingen(tx: Tx, tenantId: string, bron: string, regels: WaardebepalingImport[]): Promise<{ gekoppeld: number; toegevoegd: number }> {
-  await tx.query("delete from waardebepaling where tenant_id = $1 and import_bron = $2", [tenantId, bron]);
-  const agenda = await tx.query(
-    "select id, to_char(datum, 'YYYY-MM-DD') as datum, locatie, status_bron from waardebepaling where tenant_id = $1 and herkomst = 'koppeling'",
+export async function importeerWaardebepalingen(tx: Tx, tenantId: string, regels: WaardebepalingImport[]): Promise<WaardebepalingImportUitkomst> {
+  // Opruimen van een eerdere import: losse Excel-regels weg, en eerder overgenomen uitkomsten terug naar de stand van Realworks.
+  await tx.query("delete from waardebepaling where tenant_id = $1 and herkomst = 'import'", [tenantId]);
+  await tx.query(
+    `update waardebepaling
+        set status = case when object_id is not null then 'gewonnen' else 'in_afwachting' end, status_bron = 'automatisch',
+            verloren_aan = null, binnengehaald_via = null
+      where tenant_id = $1 and herkomst = 'koppeling' and status_bron = 'import'`,
     [tenantId],
   );
-  const uitkomst = { gekoppeld: 0, toegevoegd: 0 };
+  const agenda = await tx.query(
+    "select id, to_char(datum, 'YYYY-MM-DD') as datum, locatie, status_bron, object_id from waardebepaling where tenant_id = $1 and herkomst = 'koppeling'",
+    [tenantId],
+  );
+  const perId = new Map(agenda.rows.map((a) => [a.id as string, a]));
+  const uitkomst: WaardebepalingImportUitkomst = { gekoppeld: 0, zelfdeDag: 0, binnenEenWeek: 0, binnenVenster: 0, nietInRealworks: 0, gewonnenVolgensRealworks: 0, handmatigBehouden: 0 };
   const gebruikt = new Set<string>();
+  const keuzes = new Map<WaardebepalingImport, { id: string; dagen: number }>();
+  // Eerst de rijen die op de dag zelf passen, zodat een ruimere match geen agendapunt wegkaapt.
+  for (const maxDagen of [0, VENSTER_DAGEN]) {
+    for (const r of regels) {
+      if (keuzes.has(r)) continue;
+      const keuze = kiesAgendapunt(r, agenda.rows, maxDagen, gebruikt);
+      if (!keuze) continue;
+      gebruikt.add(keuze.id);
+      keuzes.set(r, keuze);
+    }
+  }
   for (const r of regels) {
-    const match = agenda.rows.find((a) => !gebruikt.has(a.id) && a.datum === r.datum && locatieBevatAdres(a.locatie, r.adres, r.plaats));
-    if (match) {
-      gebruikt.add(match.id);
-      if (match.status_bron !== "handmatig") {
-        await tx.query(
-          `update waardebepaling set status = $3, status_bron = 'import', verloren_aan = $4, binnengehaald_via = $5, gewijzigd_op = now() where tenant_id = $1 and id = $2`,
-          [tenantId, match.id, r.status, r.verlorenAan, r.binnengehaaldVia],
-        );
-      }
-      uitkomst.gekoppeld += 1;
+    const keuze = keuzes.get(r);
+    if (!keuze) {
+      uitkomst.nietInRealworks += 1;
+      continue;
+    }
+    uitkomst.gekoppeld += 1;
+    if (keuze.dagen === 0) uitkomst.zelfdeDag += 1;
+    else if (keuze.dagen <= 7) uitkomst.binnenEenWeek += 1;
+    else uitkomst.binnenVenster += 1;
+    const a = perId.get(keuze.id)!;
+    if (a.status_bron === "handmatig") {
+      uitkomst.handmatigBehouden += 1;
+      continue;
+    }
+    if (a.object_id !== null && r.status !== "gewonnen") {
+      // Realworks heeft de woning in de verkoop: gewonnen blijft staan, alleen "binnengehaald via" komt uit de Excel.
+      uitkomst.gewonnenVolgensRealworks += 1;
+      await tx.query("update waardebepaling set binnengehaald_via = $3, gewijzigd_op = now() where tenant_id = $1 and id = $2", [tenantId, keuze.id, r.binnengehaaldVia]);
       continue;
     }
     await tx.query(
-      `insert into waardebepaling (tenant_id, datum, adres, plaats, medewerker_id, makelaar_naam, status, status_bron, verloren_aan, binnengehaald_via, herkomst, import_bron, import_rij)
-       values ($1, $2, $3, $4, (select id from medewerker where tenant_id = $1 and (roepnaam = $5 or weergavenaam = $5) limit 1), $5, $6, 'import', $7, $8, 'import', $9, $10)`,
-      [tenantId, r.datum, r.adres, r.plaats, r.makelaar, r.status, r.verlorenAan, r.binnengehaaldVia, bron, r.importRij],
+      "update waardebepaling set status = $3, status_bron = 'import', verloren_aan = $4, binnengehaald_via = $5, gewijzigd_op = now() where tenant_id = $1 and id = $2",
+      [tenantId, keuze.id, r.status, r.verlorenAan, r.binnengehaaldVia],
     );
-    uitkomst.toegevoegd += 1;
   }
   return uitkomst;
 }

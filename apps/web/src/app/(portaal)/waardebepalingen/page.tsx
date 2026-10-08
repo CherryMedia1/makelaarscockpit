@@ -178,7 +178,7 @@ export default async function Waardebepalingen({ searchParams }: { searchParams:
                     <td className="px-3 py-2">
                       <span className="text-label">{w.adres ?? "Adres onbekend"}</span>
                       {w.plaats && <span className="text-text-muted">, {w.plaats}</span>}
-                      {w.agendaStatus === "Geannuleerd" && <span className="text-text-muted"> · geannuleerd</span>}
+                      {w.agendaStatus === "Wacht op bevestiging" && <span className="text-text-muted"> · afspraak nog niet bevestigd</span>}
                       <div className="mt-0.5">
                         <Label soort={STATUS_STIJL[w.status]}>{WAARDEBEPALING_STATUS_LABEL[w.status]}</Label>
                         {w.statusBron === "automatisch" && w.status === "gewonnen" && <span className="ml-2 text-caption text-text-muted">automatisch: woning in verkoop</span>}

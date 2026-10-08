@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgendapuntGegevens, ObjectGegevens } from "../realworks-gegevens";
 import {
-  excelRijNaarWaardebepaling, leesLocatie, locatieBevatAdres, naarWaardebepaling, pastBijObject, valideerWaardebepalingInvoer, waardebepalingDashboard,
+  excelRijNaarWaardebepaling, kiesAgendapunt, leesLocatie, locatieBevatAdres, naarWaardebepaling, pastBijObject, valideerWaardebepalingInvoer, waardebepalingDashboard,
   type Waardebepaling,
 } from "./waardebepaling";
 
@@ -78,6 +78,37 @@ describe("locatieBevatAdres", () => {
     expect(locatieBevatAdres("4701 AB  Roosendaal Steenovenstraat 55", "Steenovenstraat 5")).toBe(false);
     expect(locatieBevatAdres("4701 AB  Roosendaal Steenovenstraat 5", "Steenovenstraat 5", "Wouw")).toBe(false);
     expect(locatieBevatAdres(null, "Steenovenstraat 5")).toBe(false);
+  });
+});
+
+describe("kiesAgendapunt", () => {
+  const kandidaten = [
+    { id: "a", datum: "2026-01-12", locatie: "4701 AB  Roosendaal Steenovenstraat 5" },
+    { id: "b", datum: "2026-03-20", locatie: "4701 AB  Roosendaal Steenovenstraat 5" },
+    { id: "c", datum: "2026-01-12", locatie: "4873 AA  Etten-Leur Akkerweg 2 C" },
+    { id: "d", datum: "2026-01-14", locatie: "4873 AA  Etten-Leur Akkerweg 2" },
+    { id: "e", datum: "2026-01-12", locatie: null },
+  ];
+  const rij = { datum: "2026-01-10", adres: "Steenovenstraat 5", plaats: "Roosendaal" };
+
+  it("kiest het agendapunt met hetzelfde adres dat het dichtst bij de datum ligt, binnen het venster", () => {
+    expect(kiesAgendapunt(rij, kandidaten, 31)).toEqual({ id: "a", dagen: 2 });
+    expect(kiesAgendapunt({ ...rij, datum: "2026-03-18" }, kandidaten, 31)).toEqual({ id: "b", dagen: 2 });
+    expect(kiesAgendapunt(rij, kandidaten, 0)).toBeNull();
+    expect(kiesAgendapunt({ ...rij, datum: "2026-06-01" }, kandidaten, 31)).toBeNull();
+  });
+
+  it("herkent een huisnummer met letter, met of zonder spatie, en verkiest het exacte adres", () => {
+    expect(kiesAgendapunt({ datum: "2026-01-13", adres: "Akkerweg 2C", plaats: "Etten-Leur" }, kandidaten, 31)).toEqual({ id: "c", dagen: 1 });
+    expect(kiesAgendapunt({ datum: "2026-01-13", adres: "Akkerweg 2", plaats: "Etten Leur" }, kandidaten, 31)).toEqual({ id: "d", dagen: 1 });
+  });
+
+  it("valt terug op alleen het adres als de plaats in de Excel anders is geschreven", () => {
+    expect(kiesAgendapunt({ ...rij, plaats: "Rsd" }, kandidaten, 31)).toEqual({ id: "a", dagen: 2 });
+  });
+
+  it("slaat agendapunten over die al gebruikt zijn", () => {
+    expect(kiesAgendapunt(rij, kandidaten, 90, new Set(["a"]))).toEqual({ id: "b", dagen: 69 });
   });
 });
 

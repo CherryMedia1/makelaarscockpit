@@ -18,7 +18,9 @@ export async function haalWaardebepalingDashboard(): Promise<WaardebepalingDashb
   await connection();
   const nu = vandaagInNederland();
   if (!heeftDatabase()) return voorbeeld(nu);
-  const regels = await metHuidigeTenant((tx, sessie) => leesWaardebepalingen(tx, sessie.tenantId, nu.jaar - 1));
+  const alle = await metHuidigeTenant((tx, sessie) => leesWaardebepalingen(tx, sessie.tenantId, nu.jaar - 1));
+  // Een in Realworks geannuleerde afspraak is geen waardebepaling: niet in de cijfers en niet in de lijst.
+  const regels = alle.filter((r) => r.agendaStatus !== "Geannuleerd");
   return { isVoorbeeld: false, tot: nu.datum, cijfers: waardebepalingDashboard({ regels, jaar: nu.jaar, totEnMetMaand: nu.maand }), regels };
 }
 
