@@ -3,5 +3,6 @@ export * from "./verkoop/excel-import";
 export * from "./verkoop/dashboard";
 export * from "./verkoop/realworks-verkoop";
 export * from "./verkoop/invoer";
+export * from "./verkoop/kosten";
 export * from "./realworks-gegevens";
 export * from "./toegang/toegang";
