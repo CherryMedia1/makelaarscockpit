@@ -65,7 +65,9 @@ export function leesLocatie(locatie: string | null, bekendePlaatsen: readonly st
   return { postcode, plaats: plaats || null, adres: adres || null };
 }
 
-const normaliseer = (t: string | null | undefined) => (t ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+// Kleine letters, leestekens weg, en een spatie tussen huisnummer en letter: "2C" en "2 C" zijn hetzelfde.
+const normaliseer = (t: string | null | undefined) =>
+  (t ?? "").toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/(\d)([a-z])/g, "$1 $2").trim();
 
 /** Staat dit adres (en, als opgegeven, deze plaats) in de locatie van Realworks? Ongevoelig voor hoofdletters en leestekens. */
 export function locatieBevatAdres(locatie: string | null, adres: string, plaats: string | null = null): boolean {
@@ -88,6 +90,30 @@ export function pastBijObject(w: { datum: string; locatie: string | null; projec
   const adres = normaliseer(`${o.straat} ${o.huisnummer} ${o.huisnummertoevoeging ?? ""}`);
   if (!locatie.includes(` ${adres} `) || !locatie.includes(` ${normaliseer(o.plaats)} `)) return false;
   return o.publicatiedatum === null || o.publicatiedatum >= w.datum;
+}
+
+const dagenTussen = (a: string, b: string) => Math.abs(Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86_400_000));
+
+/**
+ * Zoekt bij een Excel-rij het agendapunt uit Realworks: hetzelfde adres, zo dicht mogelijk bij de datum en hoogstens
+ * `maxDagen` ervandaan (de Excel-datum is niet altijd de dag van de afspraak). Een locatie die op het adres eindigt gaat
+ * voor, zodat "Akkerweg 2" niet bij "Akkerweg 2 C" terechtkomt.
+ */
+export function kiesAgendapunt(
+  rij: { datum: string; adres: string; plaats: string | null },
+  kandidaten: readonly { id: string; datum: string; locatie: string | null }[],
+  maxDagen: number,
+  gebruikt: ReadonlySet<string> = new Set(),
+): { id: string; dagen: number } | null {
+  const adres = normaliseer(rij.adres);
+  const zoek = (plaats: string | null) =>
+    kandidaten
+      .filter((k) => !gebruikt.has(k.id) && locatieBevatAdres(k.locatie, rij.adres, plaats))
+      .map((k) => ({ id: k.id, dagen: dagenTussen(k.datum, rij.datum), exact: normaliseer(k.locatie).endsWith(adres) }))
+      .filter((k) => k.dagen <= maxDagen)
+      .sort((a, b) => Number(b.exact) - Number(a.exact) || a.dagen - b.dagen)[0];
+  const beste = zoek(rij.plaats) ?? (rij.plaats === null ? undefined : zoek(null));
+  return beste ? { id: beste.id, dagen: beste.dagen } : null;
 }
 
 /** Eén rij uit het Excel-tabblad "Waardebepaallijst"; datum als Date op middernacht UTC. */
