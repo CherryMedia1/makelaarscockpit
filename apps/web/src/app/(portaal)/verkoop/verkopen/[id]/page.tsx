@@ -3,11 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeft } from "lucide-react";
-import type { RuweVerkoopInvoer } from "@makelaarscockpit/domain";
+import { berekenVerkoop, type RuweVerkoopInvoer } from "@makelaarscockpit/domain";
 import { Label, Melding, PaginaKop, knopKlassen } from "@/components/basis";
 import { haalVerkoop, type VerkoopDetail } from "@/lib/verkoop-invoer";
-import { verkoopOpslaan } from "../acties";
+import { kostenregelToevoegen, kostenregelVerwijderen, verkoopOpslaan } from "../acties";
 import { VerkoopFormulier } from "../verkoop-formulier";
+import { Kosten } from "./kosten";
 
 export const metadata: Metadata = { title: "Verkoop" };
 
@@ -40,9 +41,11 @@ export default async function Verkoop({ params, searchParams }: { params: Promis
   await connection();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [{ verkoop, medewerkers }, { opgeslagen }] = await Promise.all([haalVerkoop(id), searchParams]);
+  const [{ verkoop, medewerkers, kosten }, { opgeslagen }] = await Promise.all([haalVerkoop(id), searchParams]);
   if (!verkoop) notFound();
   const opslaan = verkoopOpslaan.bind(null, verkoop.id);
+  const ingevuld = verkoop.courtage !== null || verkoop.opstartnota !== 0;
+  const omzetExBtw = ingevuld ? berekenVerkoop({ verkoopprijs: verkoop.verkoopprijs, courtage: verkoop.courtage, opstartnota: verkoop.opstartnota, aandeel: 1 }).omzetExBtwZonderAandeel : null;
 
   return (
     <>
@@ -75,6 +78,8 @@ export default async function Verkoop({ params, searchParams }: { params: Promis
         terugNaar="/verkoop/verkopen"
         knoptekst="Opslaan"
       />
+
+      <Kosten kosten={kosten} omzetExBtw={omzetExBtw} toevoegen={kostenregelToevoegen.bind(null, verkoop.id)} verwijderen={kostenregelVerwijderen.bind(null, verkoop.id)} />
     </>
   );
 }

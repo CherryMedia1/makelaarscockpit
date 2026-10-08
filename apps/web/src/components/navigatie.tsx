@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartColumn, ClipboardCheck, Home, LayoutDashboard } from "lucide-react";
+import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, Settings } from "lucide-react";
 
 const items = [
   { href: "/", label: "Overzicht", icoon: LayoutDashboard },
   { href: "/verkoop", label: "Verkoop en omzet", icoon: ChartColumn },
   { href: "/waardebepalingen", label: "Waardebepalingen", icoon: ClipboardCheck, binnenkort: true },
   { href: "/woningen", label: "Woningen in verkoop", icoon: Home, binnenkort: true },
+  { href: "/instellingen/doelen", label: "Doelstellingen", icoon: Settings, alleenBeheerder: true },
 ];
 
-export function Navigatie() {
+export function Navigatie({ beheerder }: { beheerder: boolean }) {
   const pad = usePathname();
   return (
     <nav aria-label="Hoofdmenu" className="flex gap-1 overflow-x-auto px-3 py-2 md:flex-col md:overflow-visible md:px-3 md:py-4">
-      {items.map(({ href, label, icoon: Icoon, binnenkort }) => {
+      {items.filter((item) => beheerder || !item.alleenBeheerder).map(({ href, label, icoon: Icoon, binnenkort }) => {
         const actief = href === "/" ? pad === "/" : pad.startsWith(href);
         return (
           <Link

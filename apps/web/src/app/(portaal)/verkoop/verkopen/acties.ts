@@ -4,12 +4,16 @@
 // rechtstreeks via POST te bereiken. Er worden alleen id's gelogd.
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { bewaarVerkoopInvoer, maakHandmatigeVerkoop } from "@makelaarscockpit/db";
-import { magFinancieelInvoeren, valideerVerkoopInvoer, type RuweVerkoopInvoer, type VerkoopInvoerFouten } from "@makelaarscockpit/domain";
+import { bewaarVerkoopInvoer, maakHandmatigeVerkoop, verwijderKostenregel, voegKostenregelToe } from "@makelaarscockpit/db";
+import {
+  magFinancieelInvoeren, valideerKostenregelInvoer, valideerVerkoopInvoer,
+  type KostenregelFouten, type RuweKostenregelInvoer, type RuweVerkoopInvoer, type VerkoopInvoerFouten,
+} from "@makelaarscockpit/domain";
 import { metHuidigeTenant } from "@/lib/gegevens";
 import { vereisSessie } from "@/lib/inlog/sessie";
 
 export type FormulierStand = { fouten: VerkoopInvoerFouten & { algemeen?: string }; waarden: RuweVerkoopInvoer | null };
+export type KostenStand = { fouten: KostenregelFouten & { algemeen?: string }; waarden: RuweKostenregelInvoer | null; toegevoegd: number };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -72,4 +76,30 @@ export async function verkoopToevoegen(_vorige: FormulierStand, formData: FormDa
   console.log(`verkoop ${id} handmatig toegevoegd door gebruiker ${sessie.gebruikerId}`);
   naVerandering(id);
   redirect(`/verkoop/verkopen/${id}?opgeslagen=1`);
+}
+
+export async function kostenregelToevoegen(verkoopId: string, vorige: KostenStand, formData: FormData): Promise<KostenStand> {
+  const sessie = await vereisSessie();
+  if (!magFinancieelInvoeren(sessie.rol)) return { ...vorige, fouten: { algemeen: "Je hebt geen rechten om kosten in te vullen." }, waarden: null };
+  if (!UUID.test(verkoopId)) return { ...vorige, fouten: { algemeen: "Deze verkoop bestaat niet." }, waarden: null };
+  const waarden: RuweKostenregelInvoer = {
+    soort: tekst(formData, "soort"), leverancier: tekst(formData, "leverancier"), omschrijving: tekst(formData, "omschrijving"),
+    bedrag: tekst(formData, "bedrag"), datum: tekst(formData, "datum"),
+  };
+  const uitkomst = valideerKostenregelInvoer(waarden);
+  if (!uitkomst.ok) return { ...vorige, fouten: uitkomst.fouten, waarden };
+  const gelukt = await metHuidigeTenant((tx) => voegKostenregelToe(tx, sessie.tenantId, verkoopId, uitkomst.waarde, sessie.gebruikerId));
+  if (!gelukt) return { ...vorige, fouten: { algemeen: "Deze verkoop bestaat niet meer." }, waarden };
+  console.log(`kostenregel toegevoegd aan verkoop ${verkoopId} door gebruiker ${sessie.gebruikerId}`);
+  naVerandering(verkoopId);
+  // Leeg formulier na een geslaagde toevoeging; de teller zorgt dat React de velden opnieuw opbouwt.
+  return { fouten: {}, waarden: null, toegevoegd: vorige.toegevoegd + 1 };
+}
+
+export async function kostenregelVerwijderen(verkoopId: string, kostenregelId: string): Promise<void> {
+  const sessie = await vereisSessie();
+  if (!magFinancieelInvoeren(sessie.rol) || !UUID.test(verkoopId) || !UUID.test(kostenregelId)) return;
+  const gelukt = await metHuidigeTenant((tx) => verwijderKostenregel(tx, sessie.tenantId, verkoopId, kostenregelId));
+  if (gelukt) console.log(`kostenregel ${kostenregelId} verwijderd door gebruiker ${sessie.gebruikerId}`);
+  naVerandering(verkoopId);
 }
