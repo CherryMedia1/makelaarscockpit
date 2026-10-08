@@ -5,14 +5,20 @@ import type { Tx } from "./verbinding";
 export async function upsertMedewerkers(tx: Tx, tenantId: string, medewerkers: MedewerkerGegevens[]): Promise<void> {
   for (const m of medewerkers) {
     await tx.query(
-      `insert into medewerker (tenant_id, realworks_id, weergavenaam, roepnaam, tussenvoegsel, achternaam, gesynchroniseerd_op)
-       values ($1, $2, $3, $4, $5, $6, now())
+      `insert into medewerker (tenant_id, realworks_id, relatiecode, weergavenaam, roepnaam, tussenvoegsel, achternaam, gesynchroniseerd_op)
+       values ($1, $2, $3, $4, $5, $6, $7, now())
        on conflict (tenant_id, realworks_id) do update
-         set weergavenaam = excluded.weergavenaam, roepnaam = excluded.roepnaam, tussenvoegsel = excluded.tussenvoegsel,
-             achternaam = excluded.achternaam, gesynchroniseerd_op = now()`,
-      [tenantId, m.realworksId, m.weergavenaam, m.roepnaam, m.tussenvoegsel, m.achternaam],
+         set relatiecode = excluded.relatiecode, weergavenaam = excluded.weergavenaam, roepnaam = excluded.roepnaam,
+             tussenvoegsel = excluded.tussenvoegsel, achternaam = excluded.achternaam, gesynchroniseerd_op = now()`,
+      [tenantId, m.realworksId, m.relatiecode, m.weergavenaam, m.roepnaam, m.tussenvoegsel, m.achternaam],
     );
   }
+}
+
+/** Relatiecode → weergavenaam van de medewerkers, om de gekoppelde makelaar van een object op te zoeken. */
+export async function leesMakelaarCodes(tx: Tx, tenantId: string): Promise<Map<string, string>> {
+  const { rows } = await tx.query("select relatiecode, weergavenaam from medewerker where tenant_id = $1 and relatiecode is not null", [tenantId]);
+  return new Map(rows.map((r) => [r.relatiecode as string, r.weergavenaam as string]));
 }
 
 export async function upsertObjecten(tx: Tx, tenantId: string, objecten: ObjectGegevens[]): Promise<void> {

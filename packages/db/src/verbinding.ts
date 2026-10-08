@@ -28,12 +28,22 @@ export function maakDb(): Db {
   });
 }
 
-export type Tenant = { id: string; sleutel: string; naam: string; afdelingscode: string | null; bedrijfscode: string | null };
+export type Tenant = {
+  id: string;
+  sleutel: string;
+  naam: string;
+  afdelingscode: string | null;
+  bedrijfscode: string | null;
+  /** 'JJJJ-MM-DD'; null = verkopen komen nog niet uit de Realworks-koppeling (ADR-010). */
+  koppelingVerkopenVanaf: string | null;
+};
 
 /** Zoekt een tenant op sleutel. Dit gebeurt als inlogrol, vóór de tenant-context is gezet. */
 export async function zoekTenant(db: Db, sleutel: string): Promise<Tenant> {
   const { rows } = await db.query(
-    "select id, sleutel, naam, realworks_afdelingscode as afdelingscode, realworks_bedrijfscode as bedrijfscode from tenant where sleutel = $1",
+    `select id, sleutel, naam, realworks_afdelingscode as afdelingscode, realworks_bedrijfscode as bedrijfscode,
+            to_char(koppeling_verkopen_vanaf, 'YYYY-MM-DD') as "koppelingVerkopenVanaf"
+       from tenant where sleutel = $1`,
     [sleutel],
   );
   if (rows.length !== 1) throw new Error(`tenant '${sleutel}' niet gevonden`);

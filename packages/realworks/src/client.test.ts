@@ -41,9 +41,10 @@ describe("naarObject", () => {
 
 describe("naarMedewerker", () => {
   it("bouwt de weergavenaam uit roepnaam, tussenvoegsel en achternaam", () => {
-    expect(naarMedewerker({ id: 21561647, roepnaam: "Sam", tussenvoegsel: "van", achternaam: "Voorbeeld" })).toEqual({
-      realworksId: 21561647, weergavenaam: "Sam van Voorbeeld", roepnaam: "Sam", tussenvoegsel: "van", achternaam: "Voorbeeld",
+    expect(naarMedewerker({ id: 21561647, roepnaam: "Sam", tussenvoegsel: "van", achternaam: "Voorbeeld", overige: { relatiecode: "116177" } })).toEqual({
+      realworksId: 21561647, relatiecode: "116177", weergavenaam: "Sam van Voorbeeld", roepnaam: "Sam", tussenvoegsel: "van", achternaam: "Voorbeeld",
     });
+    expect(naarMedewerker({ id: 7, achternaam: "Zonder" }).relatiecode).toBeNull();
     expect(naarMedewerker({ id: 5, roepnaam: "", tussenvoegsel: null, achternaam: "Test" }).weergavenaam).toBe("Test");
     expect(naarMedewerker({ id: 6 }).weergavenaam).toBe("Medewerker 6");
   });
