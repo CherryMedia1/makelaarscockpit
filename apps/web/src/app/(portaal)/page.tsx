@@ -4,7 +4,7 @@ import { PaginaKop } from "@/components/basis";
 
 const dashboards = [
   { href: "/verkoop", titel: "Verkoop en omzet", tekst: "Verkochte woningen, omzet per maand en per makelaar, tegenover vorig jaar en je doelstelling.", icoon: ChartColumn, klaar: true },
-  { href: "/waardebepalingen", titel: "Waardebepalingen", tekst: "Van waardebepaling naar opdracht: gewonnen, verloren en de score per makelaar.", icoon: ClipboardCheck, klaar: false },
+  { href: "/waardebepalingen", titel: "Waardebepalingen", tekst: "Van waardebepaling naar opdracht: gewonnen, verloren en de score per makelaar.", icoon: ClipboardCheck, klaar: true },
   { href: "/woningen", titel: "Woningen in verkoop", tekst: "Per woning zien welke stappen klaar zijn: foto's, tekst, Funda, bord en koopovereenkomst.", icoon: Home, klaar: false },
 ];
 

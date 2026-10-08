@@ -2,11 +2,11 @@
 // objecten vast als verkoopregels (ADR-010). Realworks toont een woning alleen tot die in het archief gaat, dus deze job
 // draait dagelijks. Ruwe antwoorden gaan naar de blob-container raw-realworks; in de log staan alleen aantallen en statussen.
 import {
-  leesMakelaarCodes, maakDb, metTenant, telSpiegel, upsertKoppelingVerkopen, upsertMedewerkers, upsertObjecten,
-  verwijderVervallenKoppelingVerkopen, zoekTenant,
+  koppelGewonnen, leesBekendePlaatsen, leesMakelaarCodes, maakDb, metTenant, telSpiegel, upsertKoppelingVerkopen, upsertMedewerkers, upsertObjecten,
+  upsertWaardebepalingen, verwijderVervallenKoppelingVerkopen, zoekTenant,
 } from "@makelaarscockpit/db";
-import { objectNaarVerkoop, type ObjectGegevens, type VerkoopUitRealworks } from "@makelaarscockpit/domain";
-import { haalMedewerkers, haalWonenObjecten, type RealworksApi, type RealworksOpties } from "@makelaarscockpit/realworks";
+import { naarWaardebepaling, objectNaarVerkoop, type ObjectGegevens, type VerkoopUitRealworks, type WaardebepalingUitRealworks } from "@makelaarscockpit/domain";
+import { haalAgendapunten, haalMedewerkers, haalWonenObjecten, type RealworksApi, type RealworksOpties } from "@makelaarscockpit/realworks";
 import { leesSecret, omgeving, schrijfBlob } from "./azure";
 
 export async function syncRealworks(): Promise<void> {
@@ -41,6 +41,7 @@ export async function syncRealworks(): Promise<void> {
     console.log(`objecten per status: ${JSON.stringify(stand.perStatus)}`);
 
     await verkopenVastleggen(db, tenant.id, tenant.koppelingVerkopenVanaf, objecten);
+    await waardebepalingenSpiegelen(db, tenant.id, tenant.afdelingscode, opties, map);
   } finally {
     await db.end();
   }
@@ -65,4 +66,40 @@ async function verkopenVastleggen(db: ReturnType<typeof maakDb>, tenantId: strin
         `${uitkomst.zonderObject} zonder object, ${zonderMakelaar} zonder bekende makelaar; vervallen: ${vervallen.verwijderd} verwijderd, ${vervallen.bewaard} bewaard (al ingevuld)`,
     );
   });
+}
+
+/**
+ * Waardebepalingen uit de agenda (issue #9). De Agenda-API kent geen filters, dus de hele agenda komt langs; alleen
+ * agendapunten van het type Waardebepaling worden bewaard, en alleen die gaan als ruw antwoord naar de blob.
+ */
+async function waardebepalingenSpiegelen(db: ReturnType<typeof maakDb>, tenantId: string, afdelingscode: string | null, opties: RealworksOpties, map: string): Promise<void> {
+  if (!afdelingscode) {
+    console.log("waardebepalingen: overgeslagen (tenant zonder afdelingscode)");
+    return;
+  }
+  const waardebepalingen: WaardebepalingUitRealworks[] = [];
+  const ruw: unknown[] = [];
+  let paginas = 0;
+  let agendapunten = 0;
+  for await (const blok of haalAgendapunten(opties, afdelingscode)) {
+    paginas += 1;
+    agendapunten += blok.agendapunten.length;
+    blok.agendapunten.forEach((a, i) => {
+      const w = naarWaardebepaling(a);
+      if (w) {
+        waardebepalingen.push(w);
+        ruw.push(blok.ruw[i]);
+      }
+    });
+  }
+  await schrijfBlob("raw-realworks", `${map}-agenda-waardebepalingen.json`, JSON.stringify(ruw));
+  const uitkomst = await metTenant(db, tenantId, async (tx) => {
+    const plaatsen = await leesBekendePlaatsen(tx, tenantId);
+    const stand = await upsertWaardebepalingen(tx, tenantId, waardebepalingen, plaatsen);
+    const gewonnen = await koppelGewonnen(tx, tenantId);
+    return { ...stand, gewonnen };
+  });
+  console.log(
+    `agenda: ${paginas} pagina's, ${agendapunten} agendapunten, ${waardebepalingen.length} waardebepalingen; ${uitkomst.nieuw} nieuw, ${uitkomst.bijgewerkt} bijgewerkt, ${uitkomst.gewonnen} nieuw gekoppeld aan een woning (gewonnen)`,
+  );
 }

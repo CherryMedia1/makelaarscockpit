@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RealworksFout, haalMedewerkers, haalWonenObjecten, naarMedewerker, naarObject } from "./index";
+import { RealworksFout, haalAgendapunten, haalMedewerkers, haalWonenObjecten, naarAgendapunt, naarMedewerker, naarObject } from "./index";
 
 // Verzonnen antwoorden in de vorm van de echte API (zie examples/wonen-object-velden.md); geen echte gegevens.
 const wonenObject = (id: number, overdracht: Record<string, unknown> = {}) => ({
@@ -90,5 +90,42 @@ describe("haalMedewerkers", () => {
     const medewerkers = await haalMedewerkers({ token: async () => "geheim", fetch });
     expect(medewerkers).toHaveLength(1);
     expect(fetch.mock.calls[0]![0]).toBe("https://api.realworks.nl/relaties/v1/medewerker?aantal=100");
+  });
+});
+
+describe("naarAgendapunt", () => {
+  it("leest type, tijden, locatie, projectcode en de gekoppelde medewerker en relatie", () => {
+    const ruw = {
+      id: 239641166, agendatype: "Waardebepaling", status: "Definitief", begintijd: "2026-01-12 16:00:00", eindtijd: "2026-01-12 17:00:00",
+      locatie: "4701 AB  Roosendaal Steenovenstraat 5", project: { projectcode: "RL103486", type: "WONEN" }, tijdstipLaatsteWijziging: "2026-01-12 16:46:13",
+      relaties: [{ id: 41785305, type: "Id van de gekoppelde relatie" }, { id: 39227406, type: "Agendapunt voor" }, { id: 28253291, type: "Geplaatst door (medewerker)" }],
+      extraInfo: "notities die wij niet bewaren",
+    };
+    expect(naarAgendapunt(ruw)).toEqual({
+      realworksId: 239641166, agendatype: "Waardebepaling", status: "Definitief", begintijd: "2026-01-12 16:00:00", eindtijd: "2026-01-12 17:00:00",
+      locatie: "4701 AB  Roosendaal Steenovenstraat 5", projectcode: "RL103486", medewerkerRealworksId: 39227406, relatieId: 41785305, realworksGewijzigdOp: "2026-01-12 16:46:13",
+    });
+  });
+
+  it("werkt met lege velden en een relatie zonder id", () => {
+    expect(naarAgendapunt({ id: 1, agendatype: "", locatie: "", relaties: [{ id: null, type: "Id van de gekoppelde relatie" }] })).toMatchObject({
+      realworksId: 1, agendatype: null, locatie: null, projectcode: null, medewerkerRealworksId: null, relatieId: null,
+    });
+    expect(() => naarAgendapunt({})).toThrow("agendapunt zonder id");
+  });
+});
+
+describe("haalAgendapunten", () => {
+  it("haalt de agenda van een afdeling op met paginering", async () => {
+    const fetch = vi.fn(async (url: string) => {
+      if (url.endsWith("?aantal=100")) return antwoord({ resultaten: [{ id: 1, agendatype: "Waardebepaling" }], paginering: { totaalAantal: 2, volgende: "https://api.realworks.nl/agenda/v3/afdeling/935773?aantal=100&vanaf=x" } });
+      return antwoord({ resultaten: [{ id: 2, agendatype: "1e bezichtiging" }], paginering: { totaalAantal: 2 } });
+    });
+    const paginas = [];
+    for await (const p of haalAgendapunten({ token: async () => "geheim", fetch: fetch as unknown as typeof globalThis.fetch }, "935773")) paginas.push(p);
+    expect(paginas).toHaveLength(2);
+    expect(paginas[0]!.agendapunten[0]!.realworksId).toBe(1);
+    expect(paginas[0]!.totaal).toBe(2);
+    expect(fetch.mock.calls[0]![0]).toBe("https://api.realworks.nl/agenda/v3/afdeling/935773?aantal=100");
   });
 });

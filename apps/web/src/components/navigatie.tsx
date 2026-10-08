@@ -7,7 +7,7 @@ import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, Settings } from "lu
 const items = [
   { href: "/", label: "Overzicht", icoon: LayoutDashboard },
   { href: "/verkoop", label: "Verkoop en omzet", icoon: ChartColumn },
-  { href: "/waardebepalingen", label: "Waardebepalingen", icoon: ClipboardCheck, binnenkort: true },
+  { href: "/waardebepalingen", label: "Waardebepalingen", icoon: ClipboardCheck },
   { href: "/woningen", label: "Woningen in verkoop", icoon: Home, binnenkort: true },
   { href: "/instellingen/doelen", label: "Doelstellingen", icoon: Settings, alleenBeheerder: true },
 ];
