@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { connection } from "next/server";
-import { Kaart, KpiTegel, Label, Melding, PaginaKop } from "@/components/basis";
+import { ClipboardList } from "lucide-react";
+import { Kaart, KpiTegel, Label, Melding, PaginaKop, knopKlassen } from "@/components/basis";
 import { BalkenLijst, StaafGrafiek } from "@/components/grafieken";
 import { MAANDEN_KORT, aantal, datum, euro, euroKort, maandJaar } from "@/lib/format";
 import { haalVerkoopDashboard, kerncijfers, type VerkoopDashboard } from "@/lib/verkoop-dashboard";
@@ -37,7 +39,12 @@ export default async function VerkoopEnOmzet() {
 
   return (
     <>
-      <PaginaKop titel="Verkoop en omzet" toelichting={`${d.jaar} tot en met ${datum(d.tot)}, vergeleken met dezelfde maanden in ${vorig}.`} />
+      <PaginaKop titel="Verkoop en omzet" toelichting={`${d.jaar} tot en met ${datum(d.tot)}, vergeleken met dezelfde maanden in ${vorig}.`}>
+        <Link href="/verkoop/verkopen" className={knopKlassen("secundair")}>
+          <ClipboardList aria-hidden size={18} strokeWidth={2} />
+          Verkopen invullen
+        </Link>
+      </PaginaKop>
 
       {d.isVoorbeeld && (
         <Melding titel="Dit zijn voorbeeldcijfers">
@@ -59,7 +66,10 @@ export default async function VerkoopEnOmzet() {
 
       {d.kern.nogZonderCourtage > 0 && (
         <Melding titel={`${d.kern.nogZonderCourtage} ${d.kern.nogZonderCourtage === 1 ? "verkoop wacht" : "verkopen wachten"} op de courtage`}>
-          Deze woningen komen uit Realworks. Zodra de afgesproken courtage en de opstartnota zijn ingevuld, tellen ze mee in de omzet.
+          Deze woningen komen uit Realworks. Zodra de afgesproken courtage en de opstartnota zijn ingevuld, tellen ze mee in de omzet.{" "}
+          <Link href="/verkoop/verkopen?filter=open" className="font-semibold underline">
+            Nu invullen
+          </Link>
         </Melding>
       )}
 
