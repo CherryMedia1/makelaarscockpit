@@ -30,6 +30,11 @@ export type ObjectGegevens = {
   gekoppeldeMakelaarCode: string | null;
   /** Tijdstip in Nederlandse tijd, 'JJJJ-MM-DD UU:MM:SS', zoals Realworks het levert. */
   realworksGewijzigdOp: string | null;
+  /** Signalen voor de checklist "Woningen in verkoop" (ADR-012); optioneel, zodat oudere aanroepers blijven werken. */
+  heeftFotos?: boolean;
+  heeftPlattegrond?: boolean;
+  energieklasse?: string | null;
+  heeftTekst?: boolean;
 };
 
 /** Een agendapunt uit de Agenda-API, voor zover wij het gebruiken (waardebepalingen; later ook bezichtigingen). */
@@ -45,6 +50,8 @@ export type AgendapuntGegevens = {
   locatie: string | null;
   /** Objectcode van het gekoppelde Wonen-object (project.projectcode). */
   projectcode: string | null;
+  /** WONEN, NIEUWBOUW, ... (project.type). */
+  projecttype: string | null;
   /** Relatie "Agendapunt voor": het id van de medewerker. */
   medewerkerRealworksId: number | null;
   /** Relatie "Id van de gekoppelde relatie": de klant. */

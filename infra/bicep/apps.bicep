@@ -288,6 +288,11 @@ var jobs = [
     commando: 'import-waardebepalingen'
     schema: ''
   }
+  {
+    naam: 'import-won'
+    commando: 'import-woningen'
+    schema: ''
+  }
 ]
 
 resource taakJobs 'Microsoft.App/jobs@2026-01-01' = [

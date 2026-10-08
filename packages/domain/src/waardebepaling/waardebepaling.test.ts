@@ -7,7 +7,7 @@ import {
 
 const agendapunt = (o: Partial<AgendapuntGegevens> = {}): AgendapuntGegevens => ({
   realworksId: 239641166, agendatype: "Waardebepaling", status: "Definitief", begintijd: "2026-01-12 16:00:00", eindtijd: "2026-01-12 17:00:00",
-  locatie: "4701 AB  Roosendaal Steenovenstraat 5", projectcode: "RL103486", medewerkerRealworksId: 39227406, relatieId: 41785305,
+  locatie: "4701 AB  Roosendaal Steenovenstraat 5", projectcode: "RL103486", projecttype: "WONEN", medewerkerRealworksId: 39227406, relatieId: 41785305,
   realworksGewijzigdOp: "2026-01-12 16:46:13", ...o,
 });
 

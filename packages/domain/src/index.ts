@@ -5,5 +5,6 @@ export * from "./verkoop/realworks-verkoop";
 export * from "./verkoop/invoer";
 export * from "./verkoop/kosten";
 export * from "./waardebepaling/waardebepaling";
+export * from "./woningen/woningen";
 export * from "./realworks-gegevens";
 export * from "./toegang/toegang";

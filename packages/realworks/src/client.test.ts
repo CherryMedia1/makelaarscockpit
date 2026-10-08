@@ -22,7 +22,19 @@ describe("naarObject", () => {
       straat: "Voorbeeldstraat", huisnummer: "12", huisnummertoevoeging: "A", postcode: "4701 AA", plaats: "ROOSENDAAL",
       status: "BESCHIKBAAR", actief: true, vraagprijs: 319000, transactieprijs: null, transactiedatum: null, transportdatum: null,
       publicatiedatum: "2026-09-30", gekoppeldeMakelaarCode: "108886", realworksGewijzigdOp: "2026-09-30 13:47:09",
+      heeftFotos: false, heeftPlattegrond: false, energieklasse: null, heeftTekst: false,
     });
+  });
+
+  it("leest de signalen voor de checklist: mediasoorten, energielabel en tekst", () => {
+    const o = naarObject({
+      ...wonenObject(4),
+      media: [{ soort: "HOOFDFOTO" }, { soort: "FOTO" }, { soort: "PLATTEGROND" }, { soort: "DOCUMENT" }],
+      algemeen: { gekoppeldeMakelaar: "108886", energieklasse: "A_P" },
+      teksten: { aanbiedingstekst: "Een verzonnen tekst." },
+    });
+    expect(o).toMatchObject({ heeftFotos: true, heeftPlattegrond: true, energieklasse: "A_P", heeftTekst: true });
+    expect(naarObject({ ...wonenObject(5), media: [{ soort: "DOCUMENT" }], teksten: { aanbiedingstekst: "  " } })).toMatchObject({ heeftFotos: false, heeftTekst: false });
   });
 
   it("kort datums met tijd in tot de datum en laat lege toevoegingen weg", () => {
@@ -103,7 +115,7 @@ describe("naarAgendapunt", () => {
     };
     expect(naarAgendapunt(ruw)).toEqual({
       realworksId: 239641166, agendatype: "Waardebepaling", status: "Definitief", begintijd: "2026-01-12 16:00:00", eindtijd: "2026-01-12 17:00:00",
-      locatie: "4701 AB  Roosendaal Steenovenstraat 5", projectcode: "RL103486", medewerkerRealworksId: 39227406, relatieId: 41785305, realworksGewijzigdOp: "2026-01-12 16:46:13",
+      locatie: "4701 AB  Roosendaal Steenovenstraat 5", projectcode: "RL103486", projecttype: "WONEN", medewerkerRealworksId: 39227406, relatieId: 41785305, realworksGewijzigdOp: "2026-01-12 16:46:13",
     });
   });
 
