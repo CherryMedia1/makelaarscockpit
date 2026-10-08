@@ -69,6 +69,7 @@ export function naarObject(ruw: unknown): ObjectGegevens {
   const huisnummer = object(adres.huisnummer);
   const overdracht = object(object(o.financieel).overdracht);
   const diversen = object(object(o.diversen).diversen);
+  const mediasoorten = new Set((Array.isArray(o.media) ? o.media : []).map((m) => tekst(object(m).soort)));
   return {
     realworksId: id,
     objectcode: tekst(diversen.objectcode),
@@ -87,6 +88,10 @@ export function naarObject(ruw: unknown): ObjectGegevens {
     publicatiedatum: datum(object(o.marketing).publicatiedatum),
     gekoppeldeMakelaarCode: tekst(object(o.algemeen).gekoppeldeMakelaar),
     realworksGewijzigdOp: tijdstip(o.tijdstipLaatsteWijziging),
+    heeftFotos: mediasoorten.has("FOTO") || mediasoorten.has("HOOFDFOTO"),
+    heeftPlattegrond: mediasoorten.has("PLATTEGROND"),
+    energieklasse: tekst(object(o.algemeen).energieklasse),
+    heeftTekst: tekst(object(o.teksten).aanbiedingstekst) !== null,
   };
 }
 
@@ -132,6 +137,7 @@ export function naarAgendapunt(ruw: unknown): AgendapuntGegevens {
     eindtijd: tijdstip(a.eindtijd),
     locatie: tekst(a.locatie),
     projectcode: tekst(object(a.project).projectcode),
+    projecttype: tekst(object(a.project).type),
     medewerkerRealworksId: relatie("Agendapunt voor"),
     relatieId: relatie("Id van de gekoppelde relatie"),
     realworksGewijzigdOp: tijdstip(a.tijdstipLaatsteWijziging),

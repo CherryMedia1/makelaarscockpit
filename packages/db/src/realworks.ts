@@ -26,9 +26,9 @@ export async function upsertObjecten(tx: Tx, tenantId: string, objecten: ObjectG
     await tx.query(
       `insert into object (tenant_id, realworks_id, objectcode, afdelingscode, straat, huisnummer, huisnummertoevoeging, postcode, plaats,
          status, actief, vraagprijs, transactieprijs, transactiedatum, transportdatum, publicatiedatum, gekoppelde_makelaar_code,
-         realworks_gewijzigd_op, gesynchroniseerd_op)
+         realworks_gewijzigd_op, heeft_fotos, heeft_plattegrond, energieklasse, heeft_tekst, gesynchroniseerd_op)
        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-               $18::timestamp at time zone 'Europe/Amsterdam', now())
+               $18::timestamp at time zone 'Europe/Amsterdam', $19, $20, $21, $22, now())
        on conflict (tenant_id, realworks_id) do update
          set objectcode = excluded.objectcode, afdelingscode = excluded.afdelingscode, straat = excluded.straat,
              huisnummer = excluded.huisnummer, huisnummertoevoeging = excluded.huisnummertoevoeging, postcode = excluded.postcode,
@@ -36,11 +36,14 @@ export async function upsertObjecten(tx: Tx, tenantId: string, objecten: ObjectG
              transactieprijs = excluded.transactieprijs, transactiedatum = excluded.transactiedatum,
              transportdatum = excluded.transportdatum, publicatiedatum = excluded.publicatiedatum,
              gekoppelde_makelaar_code = excluded.gekoppelde_makelaar_code,
-             realworks_gewijzigd_op = excluded.realworks_gewijzigd_op, gesynchroniseerd_op = now()`,
+             realworks_gewijzigd_op = excluded.realworks_gewijzigd_op, heeft_fotos = excluded.heeft_fotos,
+             heeft_plattegrond = excluded.heeft_plattegrond, energieklasse = excluded.energieklasse, heeft_tekst = excluded.heeft_tekst,
+             gesynchroniseerd_op = now()`,
       [
         tenantId, o.realworksId, o.objectcode, o.afdelingscode, o.straat, o.huisnummer, o.huisnummertoevoeging, o.postcode, o.plaats,
         o.status, o.actief, o.vraagprijs, o.transactieprijs, o.transactiedatum, o.transportdatum, o.publicatiedatum,
         o.gekoppeldeMakelaarCode, o.realworksGewijzigdOp,
+        o.heeftFotos ?? false, o.heeftPlattegrond ?? false, o.energieklasse ?? null, o.heeftTekst ?? false,
       ],
     );
   }

@@ -2,12 +2,14 @@
 import { gebruikersBijwerken } from "./gebruikers-bijwerken";
 import { importVerkooplijst } from "./import-verkooplijst";
 import { importWaardebepalingen } from "./import-waardebepalingen";
+import { importWoningen } from "./import-woningen";
 import { syncRealworks } from "./sync-realworks";
 
 const commandos: Record<string, () => Promise<void>> = {
   "sync-realworks": syncRealworks,
   "import-verkooplijst": importVerkooplijst,
   "import-waardebepalingen": importWaardebepalingen,
+  "import-woningen": importWoningen,
   "gebruikers-bijwerken": gebruikersBijwerken,
 };
 

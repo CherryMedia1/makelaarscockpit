@@ -2,10 +2,13 @@
 // objecten vast als verkoopregels (ADR-010). Realworks toont een woning alleen tot die in het archief gaat, dus deze job
 // draait dagelijks. Ruwe antwoorden gaan naar de blob-container raw-realworks; in de log staan alleen aantallen en statussen.
 import {
-  koppelGewonnen, leesBekendePlaatsen, leesMakelaarCodes, maakDb, metTenant, telSpiegel, upsertKoppelingVerkopen, upsertMedewerkers, upsertObjecten,
-  upsertWaardebepalingen, verwijderVervallenKoppelingVerkopen, zoekTenant,
+  WONING_AGENDATYPES, koppelGewonnen, leesBekendePlaatsen, leesMakelaarCodes, maakDb, metTenant, telSpiegel, upsertKoppelingVerkopen, upsertMedewerkers,
+  upsertObjecten, upsertWaardebepalingen, vervangAgendapunten, verwijderVervallenKoppelingVerkopen, werkWoningenBij, zoekTenant,
 } from "@makelaarscockpit/db";
-import { naarWaardebepaling, objectNaarVerkoop, type ObjectGegevens, type VerkoopUitRealworks, type WaardebepalingUitRealworks } from "@makelaarscockpit/domain";
+import {
+  naarWaardebepaling, objectNaarVerkoop,
+  type AgendapuntGegevens, type ObjectGegevens, type VerkoopUitRealworks, type WaardebepalingUitRealworks,
+} from "@makelaarscockpit/domain";
 import { haalAgendapunten, haalMedewerkers, haalWonenObjecten, type RealworksApi, type RealworksOpties } from "@makelaarscockpit/realworks";
 import { leesSecret, omgeving, schrijfBlob } from "./azure";
 
@@ -41,7 +44,7 @@ export async function syncRealworks(): Promise<void> {
     console.log(`objecten per status: ${JSON.stringify(stand.perStatus)}`);
 
     await verkopenVastleggen(db, tenant.id, tenant.koppelingVerkopenVanaf, objecten);
-    await waardebepalingenSpiegelen(db, tenant.id, tenant.afdelingscode, opties, map);
+    await agendaSpiegelen(db, tenant.id, tenant.afdelingscode, opties, map);
   } finally {
     await db.end();
   }
@@ -68,16 +71,20 @@ async function verkopenVastleggen(db: ReturnType<typeof maakDb>, tenantId: strin
   });
 }
 
+const vandaagInNederland = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Amsterdam", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+
 /**
- * Waardebepalingen uit de agenda (issue #9). De Agenda-API kent geen filters, dus de hele agenda komt langs; alleen
- * agendapunten van het type Waardebepaling worden bewaard, en alleen die gaan als ruw antwoord naar de blob.
+ * De agenda (issue #9 en #10). De Agenda-API kent geen filters, dus de hele agenda komt langs. Bewaard worden alleen
+ * waardebepalingen en de afspraken die bij een woning horen (verkoopgesprek, foto's, tekenafspraak, ...), zonder notities.
+ * Daarna wordt het bord "Woningen in verkoop" bijgewerkt. Alleen waardebepalingen gaan als ruw antwoord naar de blob.
  */
-async function waardebepalingenSpiegelen(db: ReturnType<typeof maakDb>, tenantId: string, afdelingscode: string | null, opties: RealworksOpties, map: string): Promise<void> {
+async function agendaSpiegelen(db: ReturnType<typeof maakDb>, tenantId: string, afdelingscode: string | null, opties: RealworksOpties, map: string): Promise<void> {
   if (!afdelingscode) {
-    console.log("waardebepalingen: overgeslagen (tenant zonder afdelingscode)");
+    console.log("agenda: overgeslagen (tenant zonder afdelingscode)");
     return;
   }
   const waardebepalingen: WaardebepalingUitRealworks[] = [];
+  const woningAfspraken: AgendapuntGegevens[] = [];
   const ruw: unknown[] = [];
   let paginas = 0;
   let agendapunten = 0;
@@ -90,6 +97,7 @@ async function waardebepalingenSpiegelen(db: ReturnType<typeof maakDb>, tenantId
         waardebepalingen.push(w);
         ruw.push(blok.ruw[i]);
       }
+      if (a.agendatype && WONING_AGENDATYPES.has(a.agendatype)) woningAfspraken.push(a);
     });
   }
   await schrijfBlob("raw-realworks", `${map}-agenda-waardebepalingen.json`, JSON.stringify(ruw));
@@ -102,4 +110,10 @@ async function waardebepalingenSpiegelen(db: ReturnType<typeof maakDb>, tenantId
   console.log(
     `agenda: ${paginas} pagina's, ${agendapunten} agendapunten, ${waardebepalingen.length} waardebepalingen; ${uitkomst.nieuw} nieuw, ${uitkomst.bijgewerkt} bijgewerkt, ${uitkomst.gewonnen} nieuw gekoppeld aan een woning (gewonnen)`,
   );
+  const bord = await metTenant(db, tenantId, async (tx) => {
+    const bewaard = await vervangAgendapunten(tx, tenantId, woningAfspraken);
+    const telling = await werkWoningenBij(tx, tenantId, vandaagInNederland(), await leesBekendePlaatsen(tx, tenantId));
+    return { bewaard, telling };
+  });
+  console.log(`woningen in verkoop: ${bord.bewaard} afspraken bij woningen bewaard; op het bord: ${JSON.stringify(bord.telling)}`);
 }
