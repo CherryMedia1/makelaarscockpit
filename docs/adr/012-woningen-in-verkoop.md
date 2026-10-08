@@ -13,4 +13,4 @@ C&R bewaakt in de Excel "Nieuwe woningen in verkoop" per woning elf stappen (fot
 - Migratie 0009: signaalkolommen op `object`, tabellen `agendapunt`, `woning` en `woning_stap` met row-level security.
 - Domeinregels in `packages/domain/src/woningen` met tests; de sync-job werkt na de agenda het bord bij.
 - De 60-dagenregel voor woningen in voorbereiding is een aanname; een woning die langer in voorbereiding is zonder nieuwe afspraak valt van het bord tot ze online komt.
-- Het koopovereenkomst-spoor (verkocht onder voorbehoud tot en met de bedenktijd) volgt als tweede spoor op hetzelfde model.
+- **Tweede spoor, koopovereenkomst** (Excel-tabblad "Status kovks"): zodra Realworks een woning als verkocht (onder voorbehoud) meldt, verhuist ze naar het spoor met toegang Move, bieders afgebeld, koopovereenkomst opgemaakt, akkoord, getekend, bedenktijd en overdracht. De overdracht komt uit de transportdatum in Realworks; een tekenafspraak in de agenda geldt als planning, niet als bewijs dat er getekend is. De bedenktijd wordt als datum ingevuld en is daarna vanzelf klaar.

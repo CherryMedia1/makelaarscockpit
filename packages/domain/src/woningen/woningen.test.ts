@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  bepaalStappen, excelCelNaarStap, faseVanObject, stappenVoorSpoor, valideerStapInvoer, voortgang, woningenInVoorbereiding,
+  bepaalStappen, excelCelNaarStap, faseVanObject, spoorVanFase, spoorVanStap, stappenVoorSpoor, valideerStapInvoer, voortgang, woningenInVoorbereiding,
   type AgendaSignaal, type RealworksSignalen,
 } from "./woningen";
 
@@ -72,6 +72,48 @@ describe("bepaalStappen", () => {
 
   it("markeert een handmatig geplande stap met een datum in het verleden als te laat", () => {
     expect(stap(bepaalStappen("verkoop", leeg, [{ stap: "bord", status: "gepland", datum: "2026-10-01" }], VANDAAG), "bord")).toMatchObject({ status: "gepland", teLaat: true });
+  });
+});
+
+describe("koopovereenkomst-spoor", () => {
+  it("heeft de stappen uit het Excel-tabblad 'Status kovks'", () => {
+    expect(stappenVoorSpoor("kovk").map((s) => s.sleutel)).toEqual(["toegang_move", "bieders_afgebeld", "kovk_opgemaakt", "kovk_akkoord", "kovk_getekend", "bedenktijd", "overdracht"]);
+  });
+
+  it("weet bij welk spoor een stap en een fase horen", () => {
+    expect(spoorVanStap("bord")).toBe("verkoop");
+    expect(spoorVanStap("bedenktijd")).toBe("kovk");
+    expect(spoorVanStap("zwembad")).toBeNull();
+    expect(spoorVanFase("voorbereiding")).toBe("verkoop");
+    expect(spoorVanFase("in_verkoop")).toBe("verkoop");
+    expect(spoorVanFase("verkocht_ov")).toBe("kovk");
+    expect(spoorVanFase("verkocht")).toBe("kovk");
+  });
+
+  it("leest de overdracht uit de transportdatum en een tekenafspraak uit de agenda", () => {
+    const u = bepaalStappen("kovk", { ...leeg, transportdatum: "2026-11-25", agenda: [{ type: "Tekenafspraak", datum: "2026-10-12", status: "Definitief" }] }, [], VANDAAG);
+    expect(stap(u, "overdracht")).toMatchObject({ status: "gepland", datum: "2026-11-25", bron: "realworks" });
+    expect(stap(u, "kovk_getekend")).toMatchObject({ status: "gepland", datum: "2026-10-12", bron: "realworks" });
+    expect(stap(bepaalStappen("kovk", { ...leeg, transportdatum: "2026-10-01" }, [], VANDAAG), "overdracht")).toMatchObject({ status: "klaar", datum: "2026-10-01", bron: "realworks" });
+  });
+
+  it("een tekenafspraak die geweest is, maakt 'getekend' niet vanzelf klaar", () => {
+    const u = bepaalStappen("kovk", { ...leeg, agenda: [{ type: "Tekenafspraak", datum: "2026-10-01", status: "Definitief" }] }, [], VANDAAG);
+    expect(stap(u, "kovk_getekend").status).toBe("open");
+  });
+
+  it("de bedenktijd is klaar zodra de ingevulde datum voorbij is", () => {
+    const loopt = bepaalStappen("kovk", leeg, [{ stap: "bedenktijd", status: "gepland", datum: "2026-10-09" }], VANDAAG);
+    expect(stap(loopt, "bedenktijd")).toMatchObject({ status: "gepland", datum: "2026-10-09", teLaat: false });
+    const vandaagNog = bepaalStappen("kovk", leeg, [{ stap: "bedenktijd", status: "gepland", datum: VANDAAG }], VANDAAG);
+    expect(stap(vandaagNog, "bedenktijd").status).toBe("gepland");
+    const voorbij = bepaalStappen("kovk", leeg, [{ stap: "bedenktijd", status: "gepland", datum: "2026-10-05" }], VANDAAG);
+    expect(stap(voorbij, "bedenktijd")).toMatchObject({ status: "klaar", datum: "2026-10-05", bron: "handmatig", teLaat: false });
+  });
+
+  it("valideert invoer per spoor", () => {
+    expect(valideerStapInvoer("kovk", { stap: "bedenktijd", status: "gepland", datum: "2026-10-12" }).ok).toBe(true);
+    expect(valideerStapInvoer("kovk", { stap: "bord", status: "klaar", datum: "" })).toEqual({ ok: false, fout: "Deze stap bestaat niet." });
   });
 });
 

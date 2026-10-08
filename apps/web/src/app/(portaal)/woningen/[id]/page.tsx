@@ -19,20 +19,21 @@ export default async function Woning({ params, searchParams }: { params: Promise
   await connection();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [{ woning, medewerkers }, { opgeslagen, fout }] = await Promise.all([haalWoning("verkoop", id), searchParams]);
+  const [{ woning, spoor, eerder, medewerkers }, { opgeslagen, fout }] = await Promise.all([haalWoning(id), searchParams]);
   if (!woning) notFound();
-  const definities = stappenVoorSpoor("verkoop");
+  const definities = stappenVoorSpoor(spoor);
+  const eerdereDefinities = stappenVoorSpoor("verkoop");
   const v = voortgang(woning.stappen);
 
   return (
     <>
-      <Link href="/woningen" className="flex w-fit items-center gap-1.5 text-body-sm text-primary hover:underline">
+      <Link href={spoor === "kovk" ? "/woningen?spoor=kovk" : "/woningen"} className="flex w-fit items-center gap-1.5 text-body-sm text-primary hover:underline">
         <ArrowLeft aria-hidden size={16} strokeWidth={2} />
-        Alle woningen
+        {spoor === "kovk" ? "Alle verkochte woningen" : "Alle woningen"}
       </Link>
       <PaginaKop titel={woning.adres ?? "Woning"} toelichting={[woning.plaats, `makelaar ${woning.makelaar}`, woning.vraagprijs === null ? null : `vraagprijs ${euro(woning.vraagprijs)}`].filter(Boolean).join(" · ")}>
         <div className="flex flex-wrap gap-2">
-          <Label soort={woning.fase === "voorbereiding" ? "info" : "inkt"}>{WONING_FASE_LABEL[woning.fase]}</Label>
+          <Label soort={woning.fase === "voorbereiding" ? "info" : woning.fase === "verkocht_ov" ? "accent" : "inkt"}>{WONING_FASE_LABEL[woning.fase]}</Label>
           <Label soort="neutraal">{v.afgerond} van {v.totaal} stappen klaar</Label>
         </div>
       </PaginaKop>
@@ -61,7 +62,10 @@ export default async function Woning({ params, searchParams }: { params: Promise
         </form>
       </Kaart>
 
-      <Kaart titel="Stappen" toelichting="Een stap die Realworks als klaar ziet, staat vast. De andere stappen zet je zelf.">
+      <Kaart
+        titel={spoor === "kovk" ? "Koopovereenkomst" : "Stappen"}
+        toelichting={spoor === "kovk" ? "Van verkocht tot en met de overdracht. Vul bij de bedenktijd de datum in waarop die verloopt; daarna is de stap vanzelf klaar." : "Een stap die Realworks als klaar ziet, staat vast. De andere stappen zet je zelf."}
+      >
         <ul className="-mx-6 -mb-6 divide-y divide-border border-t border-border">
           {woning.stappen.map((s, i) => {
             const def = definities[i]!;
@@ -95,6 +99,19 @@ export default async function Woning({ params, searchParams }: { params: Promise
           })}
         </ul>
       </Kaart>
+
+      {eerder && (
+        <Kaart titel="Stappen vóór de verkoop" toelichting="Ter informatie; deze woning is verkocht.">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+            {eerder.stappen.map((s, i) => (
+              <li key={s.sleutel} className="inline-flex items-center gap-2 text-body-sm">
+                <StapTeken label={eerdereDefinities[i]!.label} stap={s} />
+                {eerdereDefinities[i]!.kort}
+              </li>
+            ))}
+          </ul>
+        </Kaart>
+      )}
     </>
   );
 }

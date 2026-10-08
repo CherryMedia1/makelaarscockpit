@@ -4,7 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { bewaarWoningStap, leesWoningen, zetBackoffice } from "@makelaarscockpit/db";
-import { magFinancieelInvoeren, valideerStapInvoer } from "@makelaarscockpit/domain";
+import { magFinancieelInvoeren, spoorVanStap, valideerStapInvoer } from "@makelaarscockpit/domain";
 import { metHuidigeTenant } from "@/lib/gegevens";
 import { vereisSessie } from "@/lib/inlog/sessie";
 import { vandaagInNederland } from "@/lib/woningen";
@@ -15,11 +15,13 @@ export async function stapBijwerken(woningId: string, formData: FormData): Promi
   const sessie = await vereisSessie();
   const pad = `/woningen/${woningId}`;
   if (!magFinancieelInvoeren(sessie.rol) || !UUID.test(woningId)) redirect("/woningen?fout=rechten");
-  const uitkomst = valideerStapInvoer("verkoop", { stap: String(formData.get("stap") ?? ""), status: String(formData.get("status") ?? ""), datum: String(formData.get("datum") ?? "") });
+  const stap = String(formData.get("stap") ?? "");
+  const spoor = spoorVanStap(stap) ?? "verkoop";
+  const uitkomst = valideerStapInvoer(spoor, { stap, status: String(formData.get("status") ?? ""), datum: String(formData.get("datum") ?? "") });
   if (!uitkomst.ok) redirect(`${pad}?fout=${encodeURIComponent(uitkomst.fout)}`);
   const resultaat = await metHuidigeTenant(async (tx) => {
     // Realworks is leidend: een stap die Realworks al als klaar ziet, is niet met de hand te wijzigen.
-    const woning = (await leesWoningen(tx, sessie.tenantId, "verkoop", vandaagInNederland(), woningId))[0];
+    const woning = (await leesWoningen(tx, sessie.tenantId, spoor, vandaagInNederland(), woningId))[0];
     if (!woning) return "onbekend";
     const huidig = woning.stappen.find((s) => s.sleutel === uitkomst.waarde.stap);
     if (huidig?.status === "klaar" && huidig.bron === "realworks") return "realworks";
