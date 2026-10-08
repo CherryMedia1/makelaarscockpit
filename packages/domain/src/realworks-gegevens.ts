@@ -31,3 +31,23 @@ export type ObjectGegevens = {
   /** Tijdstip in Nederlandse tijd, 'JJJJ-MM-DD UU:MM:SS', zoals Realworks het levert. */
   realworksGewijzigdOp: string | null;
 };
+
+/** Een agendapunt uit de Agenda-API, voor zover wij het gebruiken (waardebepalingen; later ook bezichtigingen). */
+export type AgendapuntGegevens = {
+  realworksId: number;
+  agendatype: string | null;
+  /** Definitief, Wacht op bevestiging of Geannuleerd. */
+  status: string | null;
+  /** 'JJJJ-MM-DD UU:MM:SS' in Nederlandse tijd. */
+  begintijd: string | null;
+  eindtijd: string | null;
+  /** "postcode  plaats straat huisnummer", zoals Realworks het levert. */
+  locatie: string | null;
+  /** Objectcode van het gekoppelde Wonen-object (project.projectcode). */
+  projectcode: string | null;
+  /** Relatie "Agendapunt voor": het id van de medewerker. */
+  medewerkerRealworksId: number | null;
+  /** Relatie "Id van de gekoppelde relatie": de klant. */
+  relatieId: number | null;
+  realworksGewijzigdOp: string | null;
+};
