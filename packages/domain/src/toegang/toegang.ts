@@ -38,3 +38,16 @@ export function beoordeelInlog(gebruiker: GebruikerVoorInlog | null, poging: Inl
   }
   return { toegestaan: true };
 }
+
+/**
+ * Wie mag de financiële invoer per verkoop doen (courtage, opstartnota, verdeling, kosten). In de pilot elke medewerker:
+ * een gebruiker is nog niet gekoppeld aan een medewerker uit Realworks, dus "eigen verkopen" (ADR-006) is nog niet te bepalen.
+ */
+export function magFinancieelInvoeren(rol: Rol): boolean {
+  return rol === "medewerker" || rol === "kantoorbeheerder";
+}
+
+/** Doelstellingen en gebruikers: alleen de kantoorbeheerder (ADR-006). */
+export function magKantoorBeheren(rol: Rol): boolean {
+  return rol === "kantoorbeheerder";
+}
