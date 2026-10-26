@@ -8,3 +8,4 @@ export * from "./waardebepaling/waardebepaling";
 export * from "./woningen/woningen";
 export * from "./realworks-gegevens";
 export * from "./toegang/toegang";
+export * from "./intake/samenvoegen";
