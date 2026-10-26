@@ -38,6 +38,16 @@ param devVmSize string = 'Standard_D2as_v5'
 @description('Maak de toolbox-container aan (zie docs/handleiding-toolbox-container.md): shell vanaf het vaste NAT-IP zonder VM. Vereist natGatewayEnabled=true.')
 param toolboxEnabled bool = false
 
+@description('Maak de Foundry-resource voor de intake-module aan (ADR-014), in Sweden Central.')
+param intakeEnabled bool = false
+
+@description('Capaciteit per Foundry-deployment in duizenden tokens per minuut.')
+param foundryCapaciteit object = {
+  extractie: 50
+  controle: 50
+  embedding: 50
+}
+
 @description('Tags voor alle resources.')
 param tags object = {
   project: 'makelaarscockpit'
@@ -163,6 +173,16 @@ module communication 'modules/communication.bicep' = {
   }
 }
 
+module foundry 'modules/foundry.bicep' = if (intakeEnabled) {
+  name: '${env}-foundry'
+  params: {
+    env: env
+    tags: tags
+    identityPrincipalId: identity.outputs.principalId
+    capaciteit: foundryCapaciteit
+  }
+}
+
 module devVm 'modules/devvm.bicep' = if (devVmEnabled) {
   name: '${env}-devvm'
   params: {
@@ -202,4 +222,5 @@ output containerAppsEnvironmentId string = containerAppsEnv.outputs.containerApp
 output functionAppHostName string = functions.outputs.functionAppHostName
 output identityClientId string = identity.outputs.clientId
 output devVmSshCommand string = devVmEnabled ? devVm!.outputs.sshCommand : ''
+output foundryEndpoint string = intakeEnabled ? foundry!.outputs.foundryEndpoint : ''
 output mailAfzender string = communication.outputs.afzender

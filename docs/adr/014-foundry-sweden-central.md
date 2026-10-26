@@ -18,11 +18,12 @@ Bij *Data Zone Standard (EU)* blijft de verwerking binnen de EU-datazone, ook al
    - PDF's: Content Understanding met een eigen analyzer op het woningprofiel-schema, met de modeldeployments die Content Understanding zelf voorschrijft, ook als Data Zone Standard (EU);
    - `gpt-5.5` is de eerste alternatieve kandidaat in de evaluatie.
 4. **Toegang alleen met de managed identity** (rollen Cognitive Services User en Cognitive Services OpenAI User), lokale sleutels uit (`disableLocalAuth`). Geen API-sleutels in Key Vault of in code.
-5. **Netwerk:** publieke toegang uit, private endpoint in `snet-data` van het VNet in North Europe (een private endpoint mag in een andere regio staan dan de resource). Jobs bereiken Foundry zo via het VNet.
+5. **Netwerk (aangepast 2026-10-26, besluit Tim):** publiek bereikbaar met alleen Entra-toegang, hetzelfde patroon als Storage, Key Vault en Service Bus. Private endpoints komen voor alle diensten samen, vóór prod, met een eigen ADR.
 6. **Vooraf controleren:** vóór elke deploy de beschikbaarheid van de modelversies en het deploymenttype in Sweden Central opvragen (`az cognitiveservices model list -l swedencentral`), naar de les uit ADR-002 dat what-if regiobeperkingen niet toont.
 ## Gevolgen
 - Een tweede regio in het ontwerp: Sweden Central, kortnaam `sdc`, alleen voor Foundry. Latentie North Europe–Sweden Central is ongeveer 30 ms; voor achtergrondwerk niet relevant.
-- Kosten zijn per token en per pagina; vaste kosten zijn alleen het private endpoint (ongeveer € 7 per maand). Tokenverbruik wordt per stap gelogd in `intake_verbruik`.
-- Azure bewaart prompts en antwoorden standaard tot 30 dagen voor misbruikdetectie, binnen de datazone. Voor productie vragen we aangepaste misbruikdetectie aan; tot die is toegekend, staat dit in de verwerkersovereenkomst met kantoren.
+- Kosten zijn per token en per pagina, zonder vaste kosten. Capaciteit per deployment: 50K tokens per minuut (`foundryCapaciteit` in main.bicep). Tokenverbruik wordt per stap gelogd in `intake_verbruik`.
+- Content Understanding gebruikt dezelfde deployments (`extractie` en `embedding`); de koppeling wordt eenmalig gezet met `PATCH /contentunderstanding/defaults`. De GPT-4.1-familie, die Content Understanding vroeger vroeg, wordt in oktober 2026 uitgefaseerd.
+- Azure bewaart prompts en antwoorden standaard tot 30 dagen voor misbruikdetectie, binnen de datazone. Aangepaste misbruikdetectie wordt aangevraagd en toegekend vóórdat echte transcripten van een kantoor erdoorheen gaan (besluit Tim, 2026-10-26); in dev staan alleen verzonnen fixtures.
 - Wisselen van model is een wijziging van een deploymentnaam in Bicep plus een run van de evaluatieset; de code kent alleen de logische namen `extractie` en `controle`.
 - Als Content Understanding later in North Europe beschikbaar komt, kan de resource verhuizen; dat vraagt een vervolg-ADR.

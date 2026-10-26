@@ -18,6 +18,9 @@ param devVmSize = 'Standard_D2as_v5'
 // Toolbox-container (docs/handleiding-toolbox-container.md): shell vanaf het vaste IP, standaard 0 replica's.
 param toolboxEnabled = true
 
+// Intake-module (ADR-013, ADR-014): Foundry in Sweden Central. Kosten per token; zonder gebruik vrijwel nul.
+param intakeEnabled = true
+
 // Menselijke beheerder in dev: Entra-beheerder op Postgres en Key Vault Secrets Officer.
 // Zet beide op '' als je dat niet wilt; de apps werken via de managed identity.
 param adminObjectId = '5ea0a0fb-3469-4a13-b138-fff365379ce7'
