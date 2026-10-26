@@ -1,5 +1,5 @@
 # ADR-015 Intake: bewaren en opschonen na verkoop
-Datum: 2026-10-26 · Status: voorgesteld
+Datum: 2026-10-26 · Status: geaccepteerd
 ## Context
 De intake-module (ADR-013) slaat transcripten van intakegesprekken, notities, gespreksverslagen en checklists op. Die bevatten persoonsgegevens van de verkoper. Het afgeleide woningprofiel bevat vooral woningkenmerken, maar ook een paar gegevens over de verkoper (beschikbaarheid, sleutelregeling, huisdieren) en citaten uit het gesprek als bewijs per veld. Het kantoor is verwerkingsverantwoordelijke, MakelaarsCockPit verwerker (ADR-006).
 

@@ -1,5 +1,5 @@
 # ADR-014 Modellen via Microsoft Foundry in Sweden Central, met EU-dataverwerking
-Datum: 2026-10-26 · Status: voorgesteld
+Datum: 2026-10-26 · Status: geaccepteerd
 ## Context
 De intake-module (ADR-013) heeft taalmodellen nodig voor drie stappen: velden uit een gesprekstranscript halen, velden uit een checklist- of gespreksverslag-PDF halen, en (fase B) een woningtekst schrijven en controleren. Uitgangspunten uit het plan: alles via Microsoft Foundry, geen losse Azure OpenAI-resource, en alle data in de EU.
 

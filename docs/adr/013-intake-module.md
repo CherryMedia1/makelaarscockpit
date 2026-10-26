@@ -1,5 +1,5 @@
 # ADR-013 Intake-module: woningprofiel uit intakegesprek en checklist, als betaalde module per tenant
-Datum: 2026-10-26 · Status: voorgesteld
+Datum: 2026-10-26 · Status: geaccepteerd
 ## Context
 De intake-module (werknaam Startklaar, plan in `docs/plannen/intake-module.md`) zet per verkoopopdracht het intakegesprek en de woningchecklist om in een woningprofiel, en daaruit in een woningtekst en concept-partnerafspraken. Het is een betaalde add-on bovenop de dashboards; C&R is de eerste klant.
 
