@@ -1,0 +1,15 @@
+{
+  "object": {
+    "bouwjaar": 1978,
+    "woningtype": "hoekwoning",
+    "aantal_kamers": 5,
+    "aantal_slaapkamers": 3,
+    "parkeren": "openbaar parkeren voor de deur"
+  },
+  "installaties": {
+    "cv": { "merk": "Remeha", "type": "Tzerra Ace", "bouwjaar": 2019, "eigendom": "eigendom" },
+    "ventilatie": "natuurlijk",
+    "energielabel": "B"
+  },
+  "planning": { "keuring_gewenst": false, "meetrapport_aanwezig": false }
+}

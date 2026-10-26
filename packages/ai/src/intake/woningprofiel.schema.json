@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://makelaarscockpit.nl/schema/intake/woningprofiel.json",
+  "title": "Woningprofiel",
+  "description": "Gestructureerd profiel van een woning in verkoop, opgebouwd uit intakegesprek, checklist en verrijking (ADR-013). Alle velden zijn optioneel: een profiel groeit per bron.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "object": {
+      "type": "object",
+      "description": "Kerngegevens van de woning.",
+      "additionalProperties": false,
+      "properties": {
+        "adres": { "type": "string", "description": "Straat, huisnummer en plaats zoals genoemd." },
+        "bouwjaar": { "type": "integer", "minimum": 1000, "maximum": 2100, "description": "Bouwjaar van de woning." },
+        "woningtype": {
+          "type": "string",
+          "enum": ["tussenwoning", "hoekwoning", "twee-onder-een-kap", "vrijstaand", "geschakeld", "appartement", "bovenwoning", "benedenwoning", "overig"],
+          "description": "Soort woning."
+        },
+        "woonoppervlakte_m2": { "type": "number", "minimum": 0, "description": "Gebruiksoppervlakte wonen in m²." },
+        "inhoud_m3": { "type": "number", "minimum": 0, "description": "Bruto inhoud in m³." },
+        "perceel_m2": { "type": "number", "minimum": 0, "description": "Perceeloppervlakte in m²." },
+        "aantal_kamers": { "type": "integer", "minimum": 0, "description": "Totaal aantal kamers, inclusief woonkamer." },
+        "aantal_slaapkamers": { "type": "integer", "minimum": 0, "description": "Aantal slaapkamers." },
+        "ligging": { "type": "string", "description": "Ligging van de woning, bijv. aan rustige straat, aan park, nabij centrum." },
+        "tuin": {
+          "type": "object",
+          "description": "Tuin of buitenruimte.",
+          "additionalProperties": false,
+          "properties": {
+            "oppervlak_m2": { "type": "number", "minimum": 0, "description": "Oppervlakte van de tuin in m²." },
+            "orientatie": {
+              "type": "string",
+              "enum": ["noord", "noordoost", "oost", "zuidoost", "zuid", "zuidwest", "west", "noordwest"],
+              "description": "Ligging van de (achter)tuin op de zon."
+            }
+          }
+        },
+        "parkeren": { "type": "string", "description": "Parkeergelegenheid, bijv. eigen oprit, garage, openbaar, vergunning." }
+      }
+    },
+    "indeling": {
+      "type": "array",
+      "description": "Indeling per verdieping.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "verdieping": { "type": "string", "description": "Bijv. begane grond, eerste verdieping, zolder, kelder." },
+          "ruimtes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "naam": { "type": "string", "description": "Bijv. woonkamer, keuken, slaapkamer 1." },
+                "omschrijving": { "type": "string", "description": "Korte omschrijving van de ruimte." }
+              }
+            }
+          }
+        }
+      }
+    },
+    "installaties": {
+      "type": "object",
+      "description": "Technische installaties en energie.",
+      "additionalProperties": false,
+      "properties": {
+        "cv": {
+          "type": "object",
+          "description": "Cv-ketel.",
+          "additionalProperties": false,
+          "properties": {
+            "merk": { "type": "string" },
+            "type": { "type": "string" },
+            "bouwjaar": { "type": "integer", "minimum": 1950, "maximum": 2100 },
+            "eigendom": { "type": "string", "enum": ["eigendom", "huur", "lease"], "description": "Is de ketel van de verkoper, gehuurd of geleaset?" }
+          }
+        },
+        "warmtepomp": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "aanwezig": { "type": "boolean" },
+            "type": { "type": "string", "description": "Bijv. hybride, lucht-water, bodem." },
+            "bouwjaar": { "type": "integer", "minimum": 1980, "maximum": 2100 }
+          }
+        },
+        "zonnepanelen": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "aantal": { "type": "integer", "minimum": 0 },
+            "bouwjaar": { "type": "integer", "minimum": 1990, "maximum": 2100 }
+          }
+        },
+        "ventilatie": { "type": "string", "description": "Bijv. natuurlijk, mechanisch, WTW." },
+        "isolatie": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "dak": { "type": "boolean" },
+            "gevel": { "type": "boolean" },
+            "vloer": { "type": "boolean" },
+            "glas": { "type": "string", "description": "Bijv. enkel, dubbel, HR++, triple, of per ruimte verschillend." }
+          }
+        },
+        "energielabel": {
+          "type": "string",
+          "enum": ["A++++", "A+++", "A++", "A+", "A", "B", "C", "D", "E", "F", "G"]
+        }
+      }
+    },
+    "keuken": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "opstelling": { "type": "string", "description": "Bijv. hoekkeuken, rechte opstelling, kookeiland." },
+        "bouwjaar": { "type": "integer", "minimum": 1950, "maximum": 2100 },
+        "apparatuur": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "soort": { "type": "string", "description": "Bijv. inductiekookplaat, vaatwasser, combi-oven." },
+              "merk": { "type": "string" },
+              "staat": { "type": "string", "description": "Bijv. nieuw, goed, gedateerd." }
+            }
+          }
+        }
+      }
+    },
+    "sanitair": {
+      "type": "array",
+      "description": "Badkamers en toiletten.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ruimte": { "type": "string", "description": "Bijv. badkamer eerste verdieping, toilet begane grond." },
+          "bouwjaar": { "type": "integer", "minimum": 1950, "maximum": 2100 },
+          "voorzieningen": { "type": "array", "items": { "type": "string" }, "description": "Bijv. inloopdouche, ligbad, wastafelmeubel, zwevend toilet." }
+        }
+      }
+    },
+    "onderhoud": {
+      "type": "array",
+      "description": "Uitgevoerd onderhoud en vernieuwingen.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "wat": { "type": "string" },
+          "jaar": { "type": "integer", "minimum": 1900, "maximum": 2100 }
+        }
+      }
+    },
+    "verkoopargumenten": {
+      "type": "array",
+      "description": "Wat de verkoper zelf het mooiste aan de woning vindt, in de woorden van de verkoper.",
+      "items": { "type": "string" }
+    },
+    "zaken": {
+      "type": "object",
+      "description": "Voorbereiding van de Lijst van Zaken.",
+      "additionalProperties": false,
+      "properties": {
+        "mee_te_nemen": { "type": "array", "items": { "type": "string" } },
+        "over_te_nemen": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "planning": {
+      "type": "object",
+      "description": "Afspraken voor de verkoopvoorbereiding. Wordt na verkoop verwijderd (ADR-015).",
+      "additionalProperties": false,
+      "properties": {
+        "beschikbaarheid_verkoper": { "type": "string" },
+        "sleutelregeling": { "type": "string" },
+        "huisdieren": { "type": "string" },
+        "wensen_foto": { "type": "string" },
+        "wensen_styling": { "type": "string" },
+        "keuring_gewenst": { "type": "boolean" },
+        "meetrapport_aanwezig": { "type": "boolean" }
+      }
+    }
+  }
+}

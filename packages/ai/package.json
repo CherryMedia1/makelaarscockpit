@@ -1,0 +1,21 @@
+{
+  "name": "@makelaarscockpit/ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "genereer": "node scripts/genereer-types.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src scripts"
+  },
+  "devDependencies": {
+    "json-schema-to-typescript": "^16.0.0"
+  },
+  "dependencies": {
+    "ajv": "^8.20.0"
+  }
+}
