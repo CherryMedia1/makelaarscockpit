@@ -149,11 +149,7 @@ Volgorde, één issue en één PR per stap:
 
 **Klaar als:** voor 3 testdossiers van C&R staat een volledig profiel in de UI, met bron per veld en zonder handmatige databasehandelingen. Daarnaast: geen tabel zonder `tenant_id` en RLS, geen persoonsgegevens in de logs van een verwerkingsrun, een verkocht testdossier wordt correct opgeschoond, en `npm run lint`, `typecheck` en `test` slagen.
 
-**Voorlopige modelkeuze (voorstel, vast te leggen in ADR-014):**
-- Extractie transcript: een middelgroot model met gestructureerde output (JSON Schema, strict), uitgerold als *Data Zone Standard EU* of *Standard* in Sweden Central, zodat verwerking in de EU blijft. Kandidaten worden in A0 gekozen uit de Foundry-catalogus voor Sweden Central; een model zonder EU-verwerking valt af.
-- Checklist- en gespreksverslag-PDF: Content Understanding met een eigen analyzer op het woningprofiel-schema.
-- Bronnencontrole (fase B): een kleiner, goedkoper model uit dezelfde familie.
-- Definitieve keuze uit de evaluatieset in fase B, op kwaliteit en op het kostendoel van €3 per dossier.
+**Voorlopige modelkeuze:** zie ADR-014. Extractie met `gpt-5.4`, controle met `gpt-5.4-mini`, PDF's met Content Understanding, alle als Data Zone Standard (EU) in Sweden Central. Definitieve keuze uit de evaluatieset in fase B, op kwaliteit en op het kostendoel van €3 per dossier.
 
 ### Fase B — Tekst
 - [ ] Huisstijlconfiguratie per tenant: aanspreekvorm, toon, lengte, vaste opbouw, voorbeeldteksten
