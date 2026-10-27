@@ -8,3 +8,4 @@ export type * from "./tekst/schrijfprofiel";
 export * from "./tekst/feiten";
 export * from "./tekst/prompt";
 export * from "./tekst/render";
+export * from "./tekst/bronnencontrole";

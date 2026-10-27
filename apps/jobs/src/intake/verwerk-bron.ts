@@ -9,6 +9,7 @@ import {
 } from "@makelaarscockpit/db";
 import type { BronType } from "@makelaarscockpit/domain";
 import { DefinitieveFout, type Modelantwoord } from "./modellen";
+import type { Uitkomst } from "../wachtrij";
 
 export type IntakeBericht = { tenantId: string; dossierId: string; bronId: string };
 
@@ -19,7 +20,7 @@ export interface Diensten {
   extraheer(berichten: Bericht[], schema: JsonSchema): Promise<Modelantwoord>;
 }
 
-export type Uitkomst = "verwerkt" | "overgeslagen" | "opnieuw" | "mislukt";
+export type { Uitkomst };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

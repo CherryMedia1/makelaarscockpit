@@ -68,7 +68,7 @@ Het C&R-profiel (versie 1) maak ik op basis van de opdracht en de voorbeeldtekst
 | B1 | Schrijfprofiel ✅ 2026-10-27 | JSON Schema en validatie in `packages/ai`, verzonnen testprofiel en -voorbeelden; profielgenerator: schema, analyseprompt en stub | B0 |
 | B2 | Database ✅ 2026-10-27 | Migratie 0012 en queries in `packages/db`, integratietest | B1 |
 | B3 | Tekstlogica ✅ 2026-10-27 | Feiten, prompt, outputschema, renderen met vaste blokken (`packages/ai`); controles (`packages/domain`). **Tests eerst.** | B1 |
-| B4 | Job en infra | Command `schrijf-woningtekst` in `apps/jobs`, queue `intake-tekst`, deployment `tekst`, event-job; bronnencontrole; integratietest met opgenomen modelantwoord | B2, B3 |
+| B4 | Job en infra ✅ 2026-10-27 | Command `schrijf-woningtekst` in `apps/jobs`, queue `intake-tekst`, deployment `tekst`, event-job; bronnencontrole; integratietest met opgenomen modelantwoord | B2, B3 |
 | B5 | Portaal: tekst | Steekwoorden, feitenblok, schrijven met status, bewerken per sectie, opnieuw (geheel of sectie), goedkeuren, kopiëren en .txt | B4 |
 | B6 | Portaal: profielbeheer | Kantoorbeheerder: profiel bekijken en bewerken (nieuwe versie), voorbeeldteksten toevoegen en verwijderen. Daarna voert Tim het C&R-profiel in | B2 |
 | B7 | Opschonen | ADR-015 aanvullen: nooit goedgekeurde teksten weg na verkoop | B2 |
@@ -87,4 +87,4 @@ Het C&R-profiel (versie 1) maak ik op basis van de opdracht en de voorbeeldtekst
 
 - C&R: vrije koppen bij extra secties en de omgevingssectie gewenst? (voorlopig ja)
 - C&R: voorbeeldtekst 01 (Glymesstraat 21) ontbreekt nog; er zijn er drie aangeleverd.
-- Quotum: `gpt-5.4` Data Zone in Sweden Central heeft nu 50K voor `extractie`; `tekst` vraagt 30K extra. Vóór B4 controleren (zie `docs/handleiding-intake-azure.md`, stap 0).
+- Quotum: gecontroleerd op 2026-10-27; `gpt-5.4` Data Zone in Sweden Central heeft 100K, waarvan 50K voor `extractie` en 30K voor `tekst`.

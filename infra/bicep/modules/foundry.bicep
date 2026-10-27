@@ -20,6 +20,7 @@ param capaciteit object = {
   extractie: 50
   controle: 50
   embedding: 50
+  tekst: 30
 }
 
 // Logische namen in de code (ADR-014): wisselen van model is een wijziging hier plus een run van de evaluatieset.
@@ -35,6 +36,13 @@ var deployments = [
     model: 'gpt-5.4-mini'
     versie: '2026-03-17'
     capaciteit: capaciteit.controle
+  }
+  {
+    // Woningteksten (ADR-016); deelt het quotum voor gpt-5.4 in de datazone met extractie.
+    naam: 'tekst'
+    model: 'gpt-5.4'
+    versie: '2026-03-05'
+    capaciteit: capaciteit.tekst
   }
   {
     // Content Understanding vraagt een embeddingmodel naast het completion-model.

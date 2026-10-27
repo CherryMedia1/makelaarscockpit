@@ -46,6 +46,7 @@ param foundryCapaciteit object = {
   extractie: 50
   controle: 50
   embedding: 50
+  tekst: 30
 }
 
 @description('De rol van de managed identity op Foundry is handmatig in de portal toegewezen (route B van de handleiding); Bicep slaat hem dan over.')

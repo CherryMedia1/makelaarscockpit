@@ -25,7 +25,10 @@ export interface TekstVoorControle {
 }
 
 export type Tekstcontrole = {
-  soort: "kop" | "sectie-zonder-invoer" | "onbekende-sectie" | "inleiding-adres" | "inleiding-uitnodiging" | "afsluiting-uitnodiging" | "lengte" | "plaats";
+  soort:
+    | "kop" | "sectie-zonder-invoer" | "onbekende-sectie" | "inleiding-adres" | "inleiding-uitnodiging" | "afsluiting-uitnodiging" | "lengte" | "plaats"
+    // Uit de bronnencontrole met het model; "bron-niet-gecontroleerd" als die stap mislukte.
+    | "bron" | "bron-niet-gecontroleerd";
   sectie?: string;
   melding: string;
 };
