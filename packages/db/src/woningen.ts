@@ -85,6 +85,11 @@ export async function werkWoningenBij(tx: Tx, tenantId: string, vandaag: string,
     );
     telling.voorbereiding += 1;
   }
+  // Sinds wanneer een woning van het bord is (ADR-015): blijft staan zolang ze weg is, vervalt als ze terugkomt.
+  await tx.query(
+    "update woning set niet_zichtbaar_sinds = case when zichtbaar then null else coalesce(niet_zichtbaar_sinds, $2::date) end where tenant_id = $1",
+    [tenantId, vandaag],
+  );
   const verborgen = await tx.query("select count(*)::int as n from woning where tenant_id = $1 and not zichtbaar", [tenantId]);
   telling.verborgen = verborgen.rows[0].n;
   return telling;

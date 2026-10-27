@@ -24,7 +24,8 @@ const STATUS = {
 
 const veldAnker = (pad: string) => `veld-${pad.replace(/[^a-z0-9]+/gi, "-")}`;
 
-type Context = { woningId: string; bronnaam: Map<string, string>; fout: { veld?: string | undefined; melding?: string | undefined } };
+/** `alleenLezen`: het dossier is opgeschoond na verkoop (ADR-015); beoordelen kan niet meer. */
+type Context = { woningId: string; bronnaam: Map<string, string>; fout: { veld?: string | undefined; melding?: string | undefined }; alleenLezen: boolean };
 
 function Bewijs({ rij, ctx }: { rij: IntakeVeld; ctx: Context }) {
   const b = rij.bewijs;
@@ -62,7 +63,7 @@ function Rij({ rij, ctx }: { rij: IntakeVeld; ctx: Context }) {
         </p>
         <Bewijs rij={rij} ctx={ctx} />
       </div>
-      {rij.status !== "bevestigd" && (
+      {rij.status !== "bevestigd" && !ctx.alleenLezen && (
         <div className="flex gap-2">
           <form action={knop("bevestigen")}>
             <button type="submit" className={knopKlassen("secundair")}>
@@ -97,19 +98,21 @@ function Veldblok({ veld, ctx }: { veld: VeldOverzicht<IntakeVeld>; ctx: Context
           <Rij key={rij.id} rij={rij} ctx={ctx} />
         ))}
       </div>
-      <details className="group mt-1" open={Boolean(fout)}>
-        <summary className="inline-flex cursor-pointer items-center gap-1.5 text-body-sm text-primary hover:underline">
-          <Pencil aria-hidden size={14} strokeWidth={2} />
-          Corrigeren
-        </summary>
-        <form action={veldBeoordelen.bind(null, ctx.woningId, basis.id, "corrigeren")} className="mt-2 flex flex-wrap items-start gap-2">
-          <div className="flex w-full max-w-sm flex-col gap-1.5">
-            <Invoer id={`${anker}-waarde`} name="waarde" defaultValue={toonWaarde(basis.waarde)} aria-label={`Juiste waarde voor ${veld.label}`} fout={fout} autoComplete="off" />
-            {fout && <Foutregel id={`${anker}-waarde-fout`}>{fout}</Foutregel>}
-          </div>
-          <button type="submit" className={knopKlassen("secundair")}>Opslaan als bevestigd</button>
-        </form>
-      </details>
+      {!ctx.alleenLezen && (
+        <details className="group mt-1" open={Boolean(fout)}>
+          <summary className="inline-flex cursor-pointer items-center gap-1.5 text-body-sm text-primary hover:underline">
+            <Pencil aria-hidden size={14} strokeWidth={2} />
+            Corrigeren
+          </summary>
+          <form action={veldBeoordelen.bind(null, ctx.woningId, basis.id, "corrigeren")} className="mt-2 flex flex-wrap items-start gap-2">
+            <div className="flex w-full max-w-sm flex-col gap-1.5">
+              <Invoer id={`${anker}-waarde`} name="waarde" defaultValue={toonWaarde(basis.waarde)} aria-label={`Juiste waarde voor ${veld.label}`} fout={fout} autoComplete="off" />
+              {fout && <Foutregel id={`${anker}-waarde-fout`}>{fout}</Foutregel>}
+            </div>
+            <button type="submit" className={knopKlassen("secundair")}>Opslaan als bevestigd</button>
+          </form>
+        </details>
+      )}
     </li>
   );
 }
@@ -127,9 +130,10 @@ export default async function Profiel({ params, searchParams }: { params: Promis
     woningId: id,
     bronnaam: new Map(intake.bronnen.map((b) => [b.id, b.bestandsnaam ? `${BRON_LABEL[b.type]} · ${b.bestandsnaam}` : BRON_LABEL[b.type]])),
     fout: { veld: zoek.veld, melding: zoek.fout },
+    alleenLezen: intake.dossier.status === "opgeschoond",
   };
   const algemeneFout = zoek.fout && !zoek.veld;
-  const opgeschoond = intake.dossier.status === "opgeschoond";
+  const opgeschoond = ctx.alleenLezen;
 
   return (
     <>
@@ -148,6 +152,7 @@ export default async function Profiel({ params, searchParams }: { params: Promis
           {zoek.fout}
         </Melding>
       )}
+      {opgeschoond && <Melding titel="Opgeschoond na verkoop">De bronnen en citaten zijn verwijderd; het bevestigde woningprofiel is bewaard en alleen nog te lezen.</Melding>}
       <Melding titel="Alleen bevestigde velden tellen">
         De woningtekst wordt straks alleen uit bevestigde velden geschreven. Controleer elk voorstel tegen het citaat; bij twijfel open je de bron.
       </Melding>

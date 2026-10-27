@@ -1,5 +1,5 @@
 // Intake-module (ADR-013, ADR-015). Altijd binnen metTenant, met filter op tenant_id. Alleen id's in logs.
-import { voegSamen, type BestaandVeld, type Besluit, type Bron, type BronType } from "@makelaarscockpit/domain";
+import { voegSamen, type BestaandVeld, type Besluit, type Bron, type BronType, type DossierVoorOpschonen } from "@makelaarscockpit/domain";
 import type { Tx } from "./verbinding";
 
 export type Module = "intake";
@@ -247,4 +247,46 @@ export async function registreerIntakeVerbruik(
      values ($1, $2, $3, $4, $5, $6, $7)`,
     [tenantId, v.dossierId, v.stap, v.model, v.inputTokens, v.outputTokens, v.kostenEur],
   );
+}
+
+/** Alle intakedossiers van een tenant met wat de opschoonregel nodig heeft (ADR-015). */
+export async function intakeDossiersVoorOpschonen(tx: Tx, tenantId: string): Promise<(DossierVoorOpschonen & { id: string })[]> {
+  const { rows } = await tx.query(
+    `select d.id, d.status, w.fase, to_char(o.transportdatum, 'YYYY-MM-DD') as transportdatum, w.zichtbaar,
+            to_char(w.niet_zichtbaar_sinds, 'YYYY-MM-DD') as "nietZichtbaarSinds"
+       from intake_dossier d
+       join woning w on w.tenant_id = d.tenant_id and w.id = d.woning_id
+       left join object o on o.tenant_id = w.tenant_id and o.id = w.object_id
+      where d.tenant_id = $1`,
+    [tenantId],
+  );
+  return rows;
+}
+
+/**
+ * Opschonen na verkoop (ADR-015): open en afgewezen waarden en de groep planning weg, citaten uit het bewijs, bronnen
+ * zonder bestand. Het bevestigde woningprofiel en het verbruik blijven. De bestanden zelf verwijdert de aanroeper.
+ */
+export async function schoonIntakeDossierOp(tx: Tx, tenantId: string, dossierId: string): Promise<{ velden: number; citaten: number; bronnen: number }> {
+  const velden = await tx.query(
+    `delete from intake_veld where tenant_id = $1 and dossier_id = $2 and (status <> 'bevestigd' or pad like 'planning.%')`,
+    [tenantId, dossierId],
+  );
+  const citaten = await tx.query(
+    `update intake_veld set bewijs = jsonb_set(bewijs, '{citaat}', 'null'::jsonb)
+      where tenant_id = $1 and dossier_id = $2 and bewijs ? 'citaat' and bewijs->>'citaat' is not null`,
+    [tenantId, dossierId],
+  );
+  const bronnen = await tx.query(
+    `update intake_bron set blob_pad = null, bestandsnaam = null, verwerkstatus = 'verwijderd', verwerkfout = null
+      where tenant_id = $1 and dossier_id = $2 and verwerkstatus <> 'verwijderd'`,
+    [tenantId, dossierId],
+  );
+  await tx.query("update intake_dossier set status = 'opgeschoond' where tenant_id = $1 and id = $2", [tenantId, dossierId]);
+  return { velden: velden.rowCount ?? 0, citaten: citaten.rowCount ?? 0, bronnen: bronnen.rowCount ?? 0 };
+}
+
+/** Verwijdert een dossier met bronnen, velden en verbruik (ADR-015: ingetrokken woning). De bestanden verwijdert de aanroeper. */
+export async function verwijderIntakeDossier(tx: Tx, tenantId: string, dossierId: string): Promise<void> {
+  await tx.query("delete from intake_dossier where tenant_id = $1 and id = $2", [tenantId, dossierId]);
 }
