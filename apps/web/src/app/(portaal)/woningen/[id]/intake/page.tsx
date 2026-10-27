@@ -108,12 +108,15 @@ export default async function Intake({ params, searchParams }: { params: Promise
             </Kaart>
           </div>
 
-          <Kaart titel="Woningprofiel" toelichting="Wat uit de bronnen is gehaald. Beoordelen per veld volgt in de volgende versie.">
-            <div className="flex flex-wrap gap-2">
+          <Kaart titel="Woningprofiel" toelichting="Wat uit de bronnen is gehaald. Bevestig, corrigeer of wijs elk veld af; alleen bevestigde velden gaan naar de woningtekst.">
+            <div className="mb-4 flex flex-wrap gap-2">
               <Label soort="succes">{telling("bevestigd")} bevestigd</Label>
               <Label soort="info">{telling("voorstel")} voorstel</Label>
               <Label soort={telling("conflict") > 0 ? "accent" : "neutraal"}>{telling("conflict")} conflict</Label>
             </div>
+            <Link href={`/woningen/${woning.id}/intake/profiel`} className={knopKlassen(telling("voorstel") + telling("conflict") > 0 ? "primair" : "secundair")}>
+              {telling("voorstel") + telling("conflict") > 0 ? "Profiel beoordelen" : "Profiel bekijken"}
+            </Link>
           </Kaart>
 
           <Kaart titel="Bronnen">

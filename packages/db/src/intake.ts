@@ -179,6 +179,12 @@ export async function verwerkVeldvoorstellen(tx: Tx, tenantId: string, dossierId
   return telling;
 }
 
+/** Dossier en pad van een veld, om te controleren dat een beoordeling over de juiste woning en het juiste veld gaat. */
+export async function plaatsVanIntakeVeld(tx: Tx, tenantId: string, veldId: string): Promise<{ dossierId: string; pad: string } | null> {
+  const { rows } = await tx.query(`select dossier_id as "dossierId", pad from intake_veld where tenant_id = $1 and id = $2`, [tenantId, veldId]);
+  return rows[0] ?? null;
+}
+
 export type Beoordeling = { soort: "bevestigen" } | { soort: "corrigeren"; waarde: unknown } | { soort: "afwijzen" };
 
 /**

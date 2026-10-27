@@ -42,11 +42,13 @@ const NIET_IN_CHECKLIST = new Set(["indeling[].ruimtes"]);
 const generiek = (pad: string) => pad.replace(/\[\d+\]/g, "[]");
 const uitgesloten = (pad: string) => [...NIET_IN_CHECKLIST].some((p) => generiek(pad) === p || generiek(pad).startsWith(`${p}[]`) || generiek(pad).startsWith(`${p}.`));
 
-const labelVan = (naam: string) => {
+export const labelVan = (naam: string) => {
   const s = naam.replace(/_m2$/, " (m²)").replace(/_m3$/, " (m³)").replace(/_/g, " ");
   return s.charAt(0).toUpperCase() + s.slice(1);
 };
-const sectieVan = (naam: string, s: JsonSchema) => (s.description && s.description.length <= 30 ? s.description.replace(/\.$/, "") : labelVan(naam));
+export const sectieVan = (naam: string, s: JsonSchema) => (s.description && s.description.length <= 30 ? s.description.replace(/\.$/, "") : labelVan(naam));
+
+export const groepTitel = (sleutel: string) => GROEP_TITEL[sleutel] ?? labelVan(sleutel);
 
 const isObject = (s: JsonSchema) => s.type === "object";
 const isObjectLijst = (s: JsonSchema) => s.type === "array" && s.items?.type === "object";
@@ -105,12 +107,13 @@ export function checklistFormulier(huidig: readonly { pad: string; waarde: unkno
 
   return Object.entries(woningprofielSchema.properties ?? {})
     .filter(([sleutel]) => !uitgesloten(sleutel))
-    .map(([sleutel, s]) => ({ sleutel, titel: GROEP_TITEL[sleutel] ?? labelVan(sleutel), velden: velden(s, sleutel, sleutel, undefined) }));
+    .map(([sleutel, s]) => ({ sleutel, titel: groepTitel(sleutel), velden: velden(s, sleutel, sleutel, undefined) }));
 }
 
 const BLADEN = new Map(bladen().filter((b) => !uitgesloten(b.pad)).map((b) => [b.pad, b.schema]));
 
-function lees(schema: JsonSchema, tekst: string): { waarde: unknown } | { melding: string } {
+/** Leest één ingevulde waarde volgens het schema van het blad: getal, ja/nee, keuze of tekst, met grenzen. */
+export function leesInvoer(schema: JsonSchema, tekst: string): { waarde: unknown } | { melding: string } {
   let waarde: unknown = tekst;
   if (schema.enum) {
     if (!schema.enum.includes(tekst)) return { melding: "Kies een waarde uit de lijst." };
@@ -153,7 +156,7 @@ export function leesChecklistFormulier(invoer: Iterable<[string, unknown]>): { v
     const schema = (blad ?? item)!;
     for (const [pad, tekst] of items) {
       if (tekst === "") continue;
-      const uitkomst = lees(schema, tekst);
+      const uitkomst = leesInvoer(schema, tekst);
       if ("waarde" in uitkomst) velden.push({ pad, waarde: uitkomst.waarde });
       else fouten.push({ pad: blad ? pad : naam, melding: uitkomst.melding });
     }

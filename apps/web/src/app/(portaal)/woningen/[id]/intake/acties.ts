@@ -4,9 +4,9 @@
 // elke actie controleert zelf de sessie en of de module aan staat. Alleen id's in de log, nooit bestandsnamen of inhoud.
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { leesChecklistFormulier } from "@makelaarscockpit/ai";
+import { leesChecklistFormulier, leesVeldwaarde } from "@makelaarscockpit/ai";
 import {
-  checklistBron, intakeDossierVanWoning, leesIntakeBron, moduleAan, openIntakeDossier, verwerkVeldvoorstellen, verwijderOpenWaardenVanBron, voegIntakeBronToe,
+  beoordeelIntakeVeld, checklistBron, plaatsVanIntakeVeld, intakeDossierVanWoning, leesIntakeBron, moduleAan, openIntakeDossier, verwerkVeldvoorstellen, verwijderOpenWaardenVanBron, voegIntakeBronToe,
   zetIntakeBronStatus,
 } from "@makelaarscockpit/db";
 import { metHuidigeTenant } from "@/lib/gegevens";
@@ -69,6 +69,44 @@ export async function bestandUploaden(woningId: string, formData: FormData): Pro
 }
 
 /** `waarden` per veldnaam; meerkeuzevelden hebben meerdere waarden onder dezelfde naam. */
+const BEOORDELINGEN = ["bevestigen", "afwijzen", "corrigeren"] as const;
+export type Beoordelingsoort = (typeof BEOORDELINGEN)[number];
+
+/** Anker van een veld op de profielpagina; gelijk aan de id die de pagina gebruikt. */
+const veldAnker = (pad: string) => `veld-${pad.replace(/[^a-z0-9]+/gi, "-")}`;
+
+/**
+ * Een medewerker bevestigt, corrigeert of wijst een waarde af (ADR-013: elke medewerker mag dat). Het veld moet bij het
+ * open dossier van deze woning horen; een correctie wordt gelezen volgens het schema van het pad uit de database.
+ */
+export async function veldBeoordelen(woningId: string, veldId: string, soort: Beoordelingsoort, formData: FormData): Promise<void> {
+  const sessie = await vereisSessie();
+  const pad = `/woningen/${woningId}/intake/profiel`;
+  if (!UUID.test(woningId) || !UUID.test(veldId) || !BEOORDELINGEN.includes(soort)) redirect("/woningen?fout=onbekend");
+
+  const uitkomst = await metHuidigeTenant(async (tx): Promise<{ fout: string; anker?: string } | { anker: string }> => {
+    if (!(await moduleAan(tx, sessie.tenantId, "intake"))) return { fout: "De intake staat niet aan voor dit kantoor." };
+    const dossier = await intakeDossierVanWoning(tx, sessie.tenantId, woningId);
+    const veld = await plaatsVanIntakeVeld(tx, sessie.tenantId, veldId);
+    if (!dossier || dossier.status !== "open" || !veld || veld.dossierId !== dossier.id) return { fout: "Dit veld hoort niet bij deze woning." };
+    const anker = veldAnker(veld.pad);
+    if (soort === "corrigeren") {
+      const gelezen = leesVeldwaarde(veld.pad, String(formData.get("waarde") ?? ""));
+      if ("melding" in gelezen) return { fout: gelezen.melding, anker };
+      await beoordeelIntakeVeld(tx, sessie.tenantId, veldId, sessie.gebruikerId, { soort: "corrigeren", waarde: gelezen.waarde });
+    } else {
+      await beoordeelIntakeVeld(tx, sessie.tenantId, veldId, sessie.gebruikerId, { soort });
+    }
+    return { anker };
+  });
+
+  if ("fout" in uitkomst) redirect(`${pad}?fout=${encodeURIComponent(uitkomst.fout)}&veld=${veldId}${uitkomst.anker ? `#${uitkomst.anker}` : ""}`);
+  console.log(`intake: veld ${veldId} ${soort} door gebruiker ${sessie.gebruikerId}`);
+  revalidatePath(pad);
+  revalidatePath(`/woningen/${woningId}/intake`);
+  redirect(`${pad}#${uitkomst.anker}`);
+}
+
 /** Biedt een mislukte of blijven hangen bron opnieuw aan de verwerking aan. */
 export async function bronOpnieuwVerwerken(woningId: string, bronId: string): Promise<void> {
   const sessie = await vereisSessie();
