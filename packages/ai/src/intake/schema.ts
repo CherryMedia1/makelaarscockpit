@@ -103,7 +103,7 @@ export function extractieSchema(schema: JsonSchema = woningprofielSchema): JsonS
 }
 
 const bladValidatie = new Map<JsonSchema, ValidateFunction>();
-const valideerBlad = (schema: JsonSchema, waarde: unknown) => {
+export const valideerBlad = (schema: JsonSchema, waarde: unknown): boolean => {
   let v = bladValidatie.get(schema);
   if (!v) bladValidatie.set(schema, (v = ajv.compile(schema)));
   return v(waarde);
