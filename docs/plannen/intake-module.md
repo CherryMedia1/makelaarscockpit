@@ -152,6 +152,9 @@ Volgorde, één issue en één PR per stap:
 **Voorlopige modelkeuze:** zie ADR-014. Extractie met `gpt-5.4`, controle met `gpt-5.4-mini`, PDF's met Content Understanding, alle als Data Zone Standard (EU) in Sweden Central. Definitieve keuze uit de evaluatieset in fase B, op kwaliteit en op het kostendoel van €3 per dossier.
 
 ### Fase B — Tekst
+
+> Uitgewerkt in `docs/plannen/woningtekst-module.md` en ADR-016 (2026-10-27); daar gaan de feiten ook uit steekwoorden per sectie, en varianten vallen buiten v1.
+
 - [ ] Huisstijlconfiguratie per tenant: aanspreekvorm, toon, lengte, vaste opbouw, voorbeeldteksten
 - [ ] Foundry-agent voor tekst en varianten; prompts versioneren in `packages/ai/prompts/intake/` met `prompt_versie`
 - [ ] Bronnencontrole-stap
