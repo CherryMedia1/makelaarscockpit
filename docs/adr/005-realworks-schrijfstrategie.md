@@ -1,5 +1,5 @@
 # ADR-005 Realworks-schrijfstrategie: wat kunnen we lezen en schrijven
-Datum: 2026-09-30 · Status: voorgesteld (catalogus compleet; besluit ter bevestiging door Tim)
+Datum: 2026-09-30 · Status: geaccepteerd (bevestigd door Tim, 2026-10-26)
 ## Context
 Fase 2 en 3 hangen af van wat de Realworks-API's toestaan om te schrijven. Dit is de uitkomst van stap 4.6 van de week 1-handleiding. De catalogus komt uit de developer-portal (30-09-2026); alle GET-paden zijn getest vanaf het vaste IP 134.149.33.214 via de toolbox met de tokens van C&R (tenant `cr`). Schrijfoperaties (POST/PUT) zijn **niet** uitgevoerd.
 
@@ -56,7 +56,7 @@ Twee codes: **afdelingscode 935773** (in paden en als `afdelingscode`-parameter)
 
 Vraag aan Realworks (nog te versturen): "Zijn er (partner)endpoints voor het aanmaken of wijzigen van objecten en het toevoegen van documenten, of staan die op de roadmap?" Antwoord: _nog niet ontvangen_.
 ## Beslissing
-Voorstel:
+Besluit:
 1. **Fase 1 (dashboards)** gebruikt uitsluitend GET. Synchronisatie: Wonen en Relaties via lijst plus `tijdstipLaatsteWijziging`, Agenda via de afdelingslijst met cursor, Taken per medewerker (lijst uit `/relaties/v1/medewerker`).
 2. **Fase 2 en 3 schrijven alleen via de endpoints hierboven**: relaties, kenmerken, taken, agendapunten, responses en zoekopdrachten. Objectgegevens blijven in Realworks de waarheid en worden daar handmatig beheerd.
 3. **Documenten en gespreksverslagen** blijven in MakelaarsCockPit (Blob-container `documents`, eigen tabellen met `tenant_id`), met een verwijzing naar het Realworks-object of de relatie. In Realworks verschijnt hooguit een taak of agendapunt met een link.

@@ -86,6 +86,20 @@ async function controleerRls(client) {
     await client.query("rollback to savepoint schrijven");
     if (!geweigerd) throw new Error("tenant B kon een rij bij tenant A schrijven");
 
+    // Harde regel: elke tabel met tenant_id heeft row-level security, ook voor de eigenaar (FORCE), en een beleid.
+    // Uitzondering (migratie 0005): bij het inloggen zoekt de inlogrol een gebruiker op vóórdat er een tenant-context is.
+    const zonderForce = ["gebruiker", "inlog_token"];
+    const zonderRls = (await client.query(
+      `select c.relname from pg_class c
+         join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+         join pg_attribute a on a.attrelid = c.oid and a.attname = 'tenant_id' and not a.attisdropped
+        where c.relkind = 'r'
+          and (not c.relrowsecurity
+               or (c.relname <> all($1) and (not c.relforcerowsecurity or not exists (select from pg_policy p where p.polrelid = c.oid))))`,
+      [zonderForce],
+    )).rows.map((r) => r.relname);
+    if (zonderRls.length > 0) throw new Error(`tabellen met tenant_id zonder (geforceerde) RLS: ${zonderRls.join(", ")}`);
+
     await client.query("select set_config('app.tenant_id', '', true)");
     const zonderTenant = (await client.query("select count(*)::int as n from medewerker")).rows[0].n;
     if (zonderTenant !== 0) throw new Error(`zonder tenant zijn ${zonderTenant} rijen zichtbaar`);

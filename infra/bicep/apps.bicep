@@ -168,6 +168,15 @@ resource web 'Microsoft.App/containerApps@2026-01-01' = {
               name: 'MAIL_AFZENDER'
               value: 'DoNotReply@${emailDomein.properties.mailFromSenderDomain}'
             }
+            {
+              // Intake-module (ADR-013): uploads naar Blob-container intake, berichten naar queue intake-verwerking.
+              name: 'STORAGE_ACCOUNT'
+              value: 'stcockpit${env}${regionShort}'
+            }
+            {
+              name: 'SERVICEBUS_NAMESPACE'
+              value: 'sb-cockpit-${env}-${regionShort}.servicebus.windows.net'
+            }
           ])
           resources: {
             cpu: json('0.5')

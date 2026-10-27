@@ -5,3 +5,4 @@ export * from "./toegang";
 export * from "./kosten";
 export * from "./waardebepaling";
 export * from "./woningen";
+export * from "./intake";

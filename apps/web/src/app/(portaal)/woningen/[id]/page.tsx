@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
-import { ArrowLeft, Lock } from "lucide-react";
+import { ArrowLeft, ClipboardList, Lock } from "lucide-react";
 import { STAP_STATUSSEN, STAP_STATUS_LABEL, WONING_FASE_LABEL, stappenVoorSpoor, voortgang } from "@makelaarscockpit/domain";
 import { Kaart, Label, Melding, PaginaKop, knopKlassen } from "@/components/basis";
 import { Invoer, Keuze } from "@/components/formulier";
 import { StapTeken, stapOmschrijving } from "@/components/stap-status";
 import { euro } from "@/lib/format";
+import { intakeModuleAan } from "@/lib/intake";
 import { haalWoning } from "@/lib/woningen";
 import { backofficeBijwerken, stapBijwerken } from "../acties";
 
@@ -19,7 +20,7 @@ export default async function Woning({ params, searchParams }: { params: Promise
   await connection();
   const { id } = await params;
   if (!UUID.test(id)) notFound();
-  const [{ woning, spoor, eerder, medewerkers }, { opgeslagen, fout }] = await Promise.all([haalWoning(id), searchParams]);
+  const [{ woning, spoor, eerder, medewerkers }, { opgeslagen, fout }, intake] = await Promise.all([haalWoning(id), searchParams, intakeModuleAan()]);
   if (!woning) notFound();
   const definities = stappenVoorSpoor(spoor);
   const eerdereDefinities = stappenVoorSpoor("verkoop");
@@ -61,6 +62,15 @@ export default async function Woning({ params, searchParams }: { params: Promise
           <button type="submit" className={knopKlassen("secundair")}>Opslaan</button>
         </form>
       </Kaart>
+
+      {intake && spoor === "verkoop" && (
+        <Kaart titel="Intake" toelichting="Gespreksverslag, transcript en checklist verzamelen tot een woningprofiel.">
+          <Link href={`/woningen/${woning.id}/intake`} className={knopKlassen("secundair")}>
+            <ClipboardList aria-hidden size={18} strokeWidth={2} />
+            Naar de intake
+          </Link>
+        </Kaart>
+      )}
 
       <Kaart
         titel={spoor === "kovk" ? "Koopovereenkomst" : "Stappen"}
