@@ -11,33 +11,123 @@
       "description": "Kerngegevens van de woning.",
       "additionalProperties": false,
       "properties": {
-        "adres": { "type": "string", "description": "Straat, huisnummer en plaats zoals genoemd." },
-        "bouwjaar": { "type": "integer", "minimum": 1000, "maximum": 2100, "description": "Bouwjaar van de woning." },
+        "adres": {
+          "type": "string",
+          "description": "Straat, huisnummer en plaats zoals genoemd."
+        },
+        "bouwjaar": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 2100,
+          "description": "Bouwjaar van de woning."
+        },
         "woningtype": {
           "type": "string",
-          "enum": ["tussenwoning", "hoekwoning", "twee-onder-een-kap", "vrijstaand", "geschakeld", "appartement", "bovenwoning", "benedenwoning", "overig"],
+          "enum": [
+            "tussenwoning",
+            "hoekwoning",
+            "twee-onder-een-kap",
+            "vrijstaand",
+            "geschakeld",
+            "appartement",
+            "bovenwoning",
+            "benedenwoning",
+            "overig"
+          ],
           "description": "Soort woning."
         },
-        "woonoppervlakte_m2": { "type": "number", "minimum": 0, "description": "Gebruiksoppervlakte wonen in m²." },
-        "inhoud_m3": { "type": "number", "minimum": 0, "description": "Bruto inhoud in m³." },
-        "perceel_m2": { "type": "number", "minimum": 0, "description": "Perceeloppervlakte in m²." },
-        "aantal_kamers": { "type": "integer", "minimum": 0, "description": "Totaal aantal kamers, inclusief woonkamer." },
-        "aantal_slaapkamers": { "type": "integer", "minimum": 0, "description": "Aantal slaapkamers." },
-        "ligging": { "type": "string", "description": "Ligging van de woning, bijv. aan rustige straat, aan park, nabij centrum." },
+        "woonoppervlakte_m2": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Gebruiksoppervlakte wonen in m²."
+        },
+        "garage_m2": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Oppervlakte van de garage of andere inpandige ruimte in m²."
+        },
+        "inhoud_m3": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Bruto inhoud in m³."
+        },
+        "perceel_m2": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Perceeloppervlakte in m²."
+        },
+        "aantal_kamers": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Totaal aantal kamers, inclusief woonkamer."
+        },
+        "aantal_slaapkamers": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Aantal slaapkamers."
+        },
+        "ligging": {
+          "type": "string",
+          "description": "Ligging van de woning, bijv. aan rustige straat, aan park, nabij centrum."
+        },
         "tuin": {
           "type": "object",
           "description": "Tuin of buitenruimte.",
           "additionalProperties": false,
           "properties": {
-            "oppervlak_m2": { "type": "number", "minimum": 0, "description": "Oppervlakte van de tuin in m²." },
+            "oppervlak_m2": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Oppervlakte van de tuin in m²."
+            },
             "orientatie": {
               "type": "string",
-              "enum": ["noord", "noordoost", "oost", "zuidoost", "zuid", "zuidwest", "west", "noordwest"],
+              "enum": [
+                "noord",
+                "noordoost",
+                "oost",
+                "zuidoost",
+                "zuid",
+                "zuidwest",
+                "west",
+                "noordwest"
+              ],
               "description": "Ligging van de (achter)tuin op de zon."
+            },
+            "kenmerken": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "bestrating",
+                  "gras",
+                  "kunstgras",
+                  "borders",
+                  "vijver",
+                  "vlonders",
+                  "schuttingen",
+                  "tuinhuis",
+                  "schuur",
+                  "zonnescherm",
+                  "overkapping"
+                ]
+              },
+              "description": "Wat er in de tuin is."
+            },
+            "achterom": {
+              "type": "boolean",
+              "description": "Is er een achterom?"
             }
           }
         },
-        "parkeren": { "type": "string", "description": "Parkeergelegenheid, bijv. eigen oprit, garage, openbaar, vergunning." }
+        "parkeren": {
+          "type": "string",
+          "description": "Parkeergelegenheid, bijv. eigen oprit, garage, openbaar, vergunning."
+        },
+        "kruipruimte": {
+          "type": "boolean",
+          "description": "Heeft de woning een kruipruimte?"
+        }
       }
     },
     "indeling": {
@@ -47,17 +137,186 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "verdieping": { "type": "string", "description": "Bijv. begane grond, eerste verdieping, zolder, kelder." },
+          "verdieping": {
+            "type": "string",
+            "description": "Bijv. begane grond, eerste verdieping, zolder, kelder."
+          },
+          "vloerconstructie": {
+            "type": "string",
+            "enum": [
+              "beton",
+              "hout"
+            ],
+            "description": "Constructie van de vloer."
+          },
+          "vloerafwerking": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "hout",
+                "laminaat",
+                "tegels",
+                "pvc",
+                "vloerbedekking",
+                "gietvloer",
+                "natuursteen"
+              ]
+            },
+            "description": "Afwerking van de vloeren."
+          },
+          "vloerverwarming": {
+            "type": "boolean"
+          },
+          "convectorput": {
+            "type": "boolean"
+          },
+          "wandafwerking": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "strak gestukt",
+                "spachtelputz",
+                "structuurverf",
+                "granol",
+                "spuitwerk",
+                "behang"
+              ]
+            },
+            "description": "Afwerking van de wanden."
+          },
+          "aantal_slaapkamers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          },
           "ruimtes": {
             "type": "array",
             "items": {
               "type": "object",
               "additionalProperties": false,
               "properties": {
-                "naam": { "type": "string", "description": "Bijv. woonkamer, keuken, slaapkamer 1." },
-                "omschrijving": { "type": "string", "description": "Korte omschrijving van de ruimte." }
+                "naam": {
+                  "type": "string",
+                  "description": "Bijv. woonkamer, keuken, slaapkamer 1."
+                },
+                "omschrijving": {
+                  "type": "string",
+                  "description": "Korte omschrijving van de ruimte."
+                }
               }
             }
+          }
+        }
+      }
+    },
+    "keuken": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stijl": {
+          "type": "string",
+          "enum": [
+            "modern",
+            "neutraal",
+            "gedateerd"
+          ],
+          "description": "Uitstraling van de keuken."
+        },
+        "opstelling": {
+          "type": "string",
+          "description": "Bijv. hoekkeuken, rechte opstelling, kookeiland."
+        },
+        "merk": {
+          "type": "string",
+          "description": "Merk van de keuken."
+        },
+        "bouwjaar": {
+          "type": "integer",
+          "minimum": 1950,
+          "maximum": 2100
+        },
+        "apparatuur": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "soort": {
+                "type": "string",
+                "enum": [
+                  "koelkast",
+                  "vriezer",
+                  "koel-vriescombinatie",
+                  "vaatwasser",
+                  "oven",
+                  "combi-oven",
+                  "stoomoven",
+                  "magnetron",
+                  "quooker",
+                  "gaskookplaat",
+                  "inductiekookplaat",
+                  "keramische kookplaat",
+                  "afzuigkap",
+                  "overig"
+                ]
+              },
+              "merk": {
+                "type": "string"
+              },
+              "staat": {
+                "type": "string",
+                "description": "Bijv. nieuw, goed, gedateerd."
+              }
+            }
+          }
+        }
+      }
+    },
+    "sanitair": {
+      "type": "array",
+      "description": "Badkamers en toiletten.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ruimte": {
+            "type": "string",
+            "description": "Bijv. badkamer eerste verdieping, toilet begane grond."
+          },
+          "stijl": {
+            "type": "string",
+            "enum": [
+              "modern",
+              "neutraal",
+              "gedateerd"
+            ]
+          },
+          "bouwjaar": {
+            "type": "integer",
+            "minimum": 1950,
+            "maximum": 2100
+          },
+          "voorzieningen": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "inloopdouche",
+                "douchebak",
+                "bad",
+                "bubbelbad",
+                "toilet",
+                "zwevend toilet",
+                "badmeubel",
+                "wastafel",
+                "dubbele wastafel",
+                "centrale afzuiging",
+                "sanibroyeur"
+              ]
+            },
+            "description": "Voorzieningen in de ruimte."
           }
         }
       }
@@ -72,76 +331,207 @@
           "description": "Cv-ketel.",
           "additionalProperties": false,
           "properties": {
-            "merk": { "type": "string" },
-            "type": { "type": "string" },
-            "bouwjaar": { "type": "integer", "minimum": 1950, "maximum": 2100 },
-            "eigendom": { "type": "string", "enum": ["eigendom", "huur", "lease"], "description": "Is de ketel van de verkoper, gehuurd of geleaset?" }
+            "merk": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "bouwjaar": {
+              "type": "integer",
+              "minimum": 1950,
+              "maximum": 2100
+            },
+            "eigendom": {
+              "type": "string",
+              "enum": [
+                "eigendom",
+                "huur",
+                "lease"
+              ],
+              "description": "Is de ketel van de verkoper, gehuurd of geleaset?"
+            },
+            "onderhoudscontract": {
+              "type": "boolean",
+              "description": "Is er een onderhoudscontract voor de ketel?"
+            },
+            "laatst_onderhouden": {
+              "type": "integer",
+              "minimum": 1950,
+              "maximum": 2100,
+              "description": "Jaar van het laatste onderhoud."
+            }
           }
         },
         "warmtepomp": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "aanwezig": { "type": "boolean" },
-            "type": { "type": "string", "description": "Bijv. hybride, lucht-water, bodem." },
-            "bouwjaar": { "type": "integer", "minimum": 1980, "maximum": 2100 }
+            "aanwezig": {
+              "type": "boolean"
+            },
+            "type": {
+              "type": "string",
+              "description": "Bijv. hybride, lucht-water, bodem."
+            },
+            "bouwjaar": {
+              "type": "integer",
+              "minimum": 1980,
+              "maximum": 2100
+            }
           }
         },
         "zonnepanelen": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "aantal": { "type": "integer", "minimum": 0 },
-            "bouwjaar": { "type": "integer", "minimum": 1990, "maximum": 2100 }
+            "aantal": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "bouwjaar": {
+              "type": "integer",
+              "minimum": 1990,
+              "maximum": 2100
+            },
+            "opbrengst_kwh": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Opbrengst in kWh per jaar."
+            }
           }
         },
-        "ventilatie": { "type": "string", "description": "Bijv. natuurlijk, mechanisch, WTW." },
+        "zonneboiler": {
+          "type": "boolean"
+        },
+        "ventilatie": {
+          "type": "string",
+          "description": "Bijv. natuurlijk, mechanisch, WTW."
+        },
+        "groepenkast": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stijl": {
+              "type": "string",
+              "enum": [
+                "modern",
+                "gedateerd"
+              ]
+            },
+            "aantal_groepen": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "aardlek": {
+              "type": "boolean",
+              "description": "Heeft de groepenkast aardlekschakelaars?"
+            }
+          }
+        },
         "isolatie": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "dak": { "type": "boolean" },
-            "gevel": { "type": "boolean" },
-            "vloer": { "type": "boolean" },
-            "glas": { "type": "string", "description": "Bijv. enkel, dubbel, HR++, triple, of per ruimte verschillend." }
+            "dak": {
+              "type": "boolean"
+            },
+            "gevel": {
+              "type": "boolean",
+              "description": "Spouwmuurisolatie."
+            },
+            "vloer": {
+              "type": "boolean"
+            },
+            "glas": {
+              "type": "string",
+              "description": "Bijv. enkel, dubbel, HR++, triple, of per ruimte verschillend."
+            }
           }
         },
         "energielabel": {
           "type": "string",
-          "enum": ["A++++", "A+++", "A++", "A+", "A", "B", "C", "D", "E", "F", "G"]
+          "enum": [
+            "A++++",
+            "A+++",
+            "A++",
+            "A+",
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G"
+          ]
         }
       }
     },
-    "keuken": {
+    "kozijnen": {
+      "type": "object",
+      "description": "Kozijnen, zonwering en schilderwerk.",
+      "additionalProperties": false,
+      "properties": {
+        "materiaal": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "hout",
+              "kunststof",
+              "aluminium"
+            ]
+          }
+        },
+        "rolluiken": {
+          "type": "string",
+          "enum": [
+            "geen",
+            "elektrisch",
+            "handmatig"
+          ]
+        },
+        "screens": {
+          "type": "string",
+          "enum": [
+            "geen",
+            "elektrisch",
+            "handmatig"
+          ]
+        },
+        "schilderwerk_jaar": {
+          "type": "integer",
+          "minimum": 1950,
+          "maximum": 2100,
+          "description": "Jaar van het laatste buitenschilderwerk."
+        }
+      }
+    },
+    "dak": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "opstelling": { "type": "string", "description": "Bijv. hoekkeuken, rechte opstelling, kookeiland." },
-        "bouwjaar": { "type": "integer", "minimum": 1950, "maximum": 2100 },
-        "apparatuur": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "soort": { "type": "string", "description": "Bijv. inductiekookplaat, vaatwasser, combi-oven." },
-              "merk": { "type": "string" },
-              "staat": { "type": "string", "description": "Bijv. nieuw, goed, gedateerd." }
+        "platdak": {
+          "type": "object",
+          "description": "Plat dak.",
+          "additionalProperties": false,
+          "properties": {
+            "bedekking": {
+              "type": "string",
+              "enum": [
+                "bitumen",
+                "epdm",
+                "overig"
+              ]
+            },
+            "jaar": {
+              "type": "integer",
+              "minimum": 1950,
+              "maximum": 2100,
+              "description": "Jaar waarin de dakbedekking is aangebracht."
             }
           }
-        }
-      }
-    },
-    "sanitair": {
-      "type": "array",
-      "description": "Badkamers en toiletten.",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "ruimte": { "type": "string", "description": "Bijv. badkamer eerste verdieping, toilet begane grond." },
-          "bouwjaar": { "type": "integer", "minimum": 1950, "maximum": 2100 },
-          "voorzieningen": { "type": "array", "items": { "type": "string" }, "description": "Bijv. inloopdouche, ligbad, wastafelmeubel, zwevend toilet." }
         }
       }
     },
@@ -152,23 +542,114 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "wat": { "type": "string" },
-          "jaar": { "type": "integer", "minimum": 1900, "maximum": 2100 }
+          "wat": {
+            "type": "string"
+          },
+          "jaar": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100
+          }
         }
       }
     },
-    "verkoopargumenten": {
-      "type": "array",
-      "description": "Wat de verkoper zelf het mooiste aan de woning vindt, in de woorden van de verkoper.",
-      "items": { "type": "string" }
+    "gebreken": {
+      "type": "object",
+      "description": "Gebreken en asbest.",
+      "additionalProperties": false,
+      "properties": {
+        "bekende_gebreken": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Gebreken die er zijn of zijn geweest, voor de mededelingsplicht."
+        },
+        "asbest": {
+          "type": "string",
+          "enum": [
+            "ja",
+            "nee",
+            "onbekend"
+          ],
+          "description": "Is er (mogelijk) asbest aanwezig?"
+        }
+      }
+    },
+    "vve": {
+      "type": "object",
+      "description": "Alleen bij een appartement.",
+      "additionalProperties": false,
+      "properties": {
+        "bijdrage_per_maand": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Servicekosten aan de VvE in euro per maand."
+        },
+        "inbegrepen": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "opstal",
+              "onderhoud",
+              "schoonmaak",
+              "glazenwassen",
+              "voorschot gwl"
+            ]
+          },
+          "description": "Wat in de bijdrage inbegrepen is."
+        },
+        "vergaderingen_per_jaar": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 52
+        },
+        "reservefonds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Stand van het reservefonds in euro."
+        },
+        "stukken": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "mjop",
+              "financieel jaaroverzicht",
+              "begroting",
+              "notulen",
+              "inschrijving kvk"
+            ]
+          },
+          "description": "Welke stukken aanwezig zijn."
+        }
+      }
     },
     "zaken": {
       "type": "object",
       "description": "Voorbereiding van de Lijst van Zaken.",
       "additionalProperties": false,
       "properties": {
-        "mee_te_nemen": { "type": "array", "items": { "type": "string" } },
-        "over_te_nemen": { "type": "array", "items": { "type": "string" } }
+        "mee_te_nemen": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "over_te_nemen": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "verkoopargumenten": {
+      "type": "array",
+      "description": "Wat de verkoper zelf het mooiste aan de woning vindt, in de woorden van de verkoper.",
+      "items": {
+        "type": "string"
       }
     },
     "planning": {
@@ -176,14 +657,39 @@
       "description": "Afspraken voor de verkoopvoorbereiding. Wordt na verkoop verwijderd (ADR-015).",
       "additionalProperties": false,
       "properties": {
-        "beschikbaarheid_verkoper": { "type": "string" },
-        "sleutelregeling": { "type": "string" },
-        "huisdieren": { "type": "string" },
-        "wensen_foto": { "type": "string" },
-        "wensen_styling": { "type": "string" },
-        "keuring_gewenst": { "type": "boolean" },
-        "meetrapport_aanwezig": { "type": "boolean" }
+        "beschikbaarheid_verkoper": {
+          "type": "string"
+        },
+        "sleutelregeling": {
+          "type": "string"
+        },
+        "huisdieren": {
+          "type": "string"
+        },
+        "wensen_foto": {
+          "type": "string"
+        },
+        "wensen_styling": {
+          "type": "string"
+        },
+        "keuring_gewenst": {
+          "type": "boolean"
+        },
+        "meetrapport_aanwezig": {
+          "type": "boolean"
+        },
+        "voorkeur_passeerdatum": {
+          "type": "string",
+          "description": "Voorkeur van de verkoper voor de passeerdatum."
+        }
       }
+    },
+    "opmerkingen": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Overige opmerkingen over de woning."
     }
   }
 }

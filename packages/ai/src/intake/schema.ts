@@ -2,6 +2,7 @@
 // de lijst met bladvelden voor formulier en review, en de omzetting van modeloutput naar veldvoorstellen.
 import { Ajv2020, type ValidateFunction } from "ajv/dist/2020.js";
 import schemaJson from "./woningprofiel.schema.json" with { type: "json" };
+import { citaatKomtVoor } from "./extractie";
 import type { Woningprofiel } from "./woningprofiel";
 
 export interface JsonSchema {
@@ -109,14 +110,15 @@ export const valideerBlad = (schema: JsonSchema, waarde: unknown): boolean => {
   return v(waarde);
 };
 
-export type Weggooireden = "geen bewijs" | "ongeldige waarde";
+export type Weggooireden = "geen bewijs" | "citaat niet in bron" | "ongeldige waarde";
 
 /**
  * Zet extractie-output om in veldvoorstellen met concrete paden (`indeling[0].ruimtes[1].naam`).
- * Een blad zonder citaat of met een waarde die niet aan het schema voldoet, wordt weggegooid; de reden komt
- * terug met alleen het pad, zodat het gelogd kan worden zonder inhoud.
+ * Een blad zonder citaat of met een waarde die niet aan het schema voldoet, wordt weggegooid; met `brontekst` ook een
+ * blad waarvan het citaat niet letterlijk in de bron staat (verzonnen bewijs). De reden komt terug met alleen het pad,
+ * zodat het gelogd kan worden zonder inhoud.
  */
-export function naarVeldvoorstellen(extractie: unknown, schema: JsonSchema = woningprofielSchema): { voorstellen: Veldvoorstel[]; weggegooid: { pad: string; reden: Weggooireden }[] } {
+export function naarVeldvoorstellen(extractie: unknown, schema: JsonSchema = woningprofielSchema, brontekst?: string): { voorstellen: Veldvoorstel[]; weggegooid: { pad: string; reden: Weggooireden }[] } {
   const voorstellen: Veldvoorstel[] = [];
   const weggegooid: { pad: string; reden: Weggooireden }[] = [];
 
@@ -135,6 +137,10 @@ export function naarVeldvoorstellen(extractie: unknown, schema: JsonSchema = won
     if (blad.waarde === null || blad.waarde === undefined) return;
     if (!blad.bewijs || typeof blad.bewijs.citaat !== "string" || blad.bewijs.citaat.trim() === "") {
       weggegooid.push({ pad, reden: "geen bewijs" });
+      return;
+    }
+    if (brontekst !== undefined && !citaatKomtVoor(brontekst, blad.bewijs.citaat)) {
+      weggegooid.push({ pad, reden: "citaat niet in bron" });
       return;
     }
     if (!valideerBlad(s, blad.waarde)) {

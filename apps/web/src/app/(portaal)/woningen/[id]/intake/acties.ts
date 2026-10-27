@@ -67,12 +67,14 @@ export async function bestandUploaden(woningId: string, formData: FormData): Pro
   redirect(`${pad}?${gemeld ? "geupload=1" : "wachtrij=0"}`);
 }
 
-export type ChecklistStand = { fouten: Record<string, string>; waarden: Record<string, string> | null };
+/** `waarden` per veldnaam; meerkeuzevelden hebben meerdere waarden onder dezelfde naam. */
+export type ChecklistStand = { fouten: Record<string, string>; waarden: Record<string, string[]> | null };
 
 export async function checklistOpslaan(woningId: string, _vorige: ChecklistStand, formData: FormData): Promise<ChecklistStand> {
   const sessie = await vereisSessie();
   if (!UUID.test(woningId)) return { fouten: { algemeen: "Deze woning bestaat niet." }, waarden: null };
-  const waarden = Object.fromEntries([...formData.entries()].filter(([, v]) => typeof v === "string")) as Record<string, string>;
+  const waarden: Record<string, string[]> = {};
+  for (const [naam, v] of formData.entries()) if (typeof v === "string") (waarden[naam] ??= []).push(v);
   const { velden, fouten } = leesChecklistFormulier(formData.entries());
   if (fouten.length > 0) return { fouten: Object.fromEntries(fouten.map((f) => [f.pad, f.melding])), waarden };
 
