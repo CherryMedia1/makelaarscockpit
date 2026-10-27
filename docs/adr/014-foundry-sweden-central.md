@@ -17,7 +17,7 @@ Bij *Data Zone Standard (EU)* blijft de verwerking binnen de EU-datazone, ook al
    - controle en goedkope stappen (bronnencontrole, adres-matching): `gpt-5.4-mini`;
    - PDF's: Content Understanding met een eigen analyzer op het woningprofiel-schema, met de modeldeployments die Content Understanding zelf voorschrijft, ook als Data Zone Standard (EU);
    - `gpt-5.5` is de eerste alternatieve kandidaat in de evaluatie.
-4. **Toegang alleen met de managed identity** (rollen Cognitive Services User en Cognitive Services OpenAI User), lokale sleutels uit (`disableLocalAuth`). Geen API-sleutels in Key Vault of in code.
+4. **Toegang alleen met de managed identity** (rol Cognitive Services User; die dekt ook de modelaanroepen), lokale sleutels uit (`disableLocalAuth`). Geen API-sleutels in Key Vault of in code.
 5. **Netwerk (aangepast 2026-10-26, besluit Tim):** publiek bereikbaar met alleen Entra-toegang, hetzelfde patroon als Storage, Key Vault en Service Bus. Private endpoints komen voor alle diensten samen, vóór prod, met een eigen ADR.
 6. **Vooraf controleren:** vóór elke deploy de beschikbaarheid van de modelversies en het deploymenttype in Sweden Central opvragen (`az cognitiveservices model list -l swedencentral`), naar de les uit ADR-002 dat what-if regiobeperkingen niet toont.
 ## Gevolgen
