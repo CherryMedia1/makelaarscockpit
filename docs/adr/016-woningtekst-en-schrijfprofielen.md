@@ -1,5 +1,5 @@
 # ADR-016 Woningtekst-module en schrijfprofielen
-Datum: 2026-10-27 · Status: voorgesteld
+Datum: 2026-10-27 · Status: geaccepteerd
 ## Context
 Fase B van de intake-module (plan `docs/plannen/woningtekst-module.md`): een woningtekst in de huisstijl van het kantoor, te bewerken, goed te keuren en te kopiëren. C&R maakt teksten nu met een eigen GPT ("Wilma") op basis van steekwoorden per ruimte. De opdracht van Tim (`docs/plannen/Woningteksten/INSTRUCTIE-woningtekst-module.md`, niet in git) vraagt om schrijfprofielen per kantoor, zodat niets C&R-specifieks in de code staat, en om voorbereiding op het automatisch afleiden van een profiel uit bestaande teksten.
 
