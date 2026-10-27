@@ -361,10 +361,23 @@ resource taakJobs 'Microsoft.App/jobs@2026-01-01' = [
   }
 ]
 
-// Intake-module (ADR-013, ADR-014): verwerkt bronnen van de queue intake-verwerking. KEDA start een uitvoering zodra er
-// berichten staan; zonder berichten draait er niets en kost de job niets. Multi-tenant: de tenant komt uit het bericht.
-resource intakeJob 'Microsoft.App/jobs@2026-01-01' = if (intakeEnabled) {
-  name: 'job-intake-cockpit-${env}-${regionShort}'
+// Intake-module (ADR-013, ADR-014, ADR-016): eventgestuurde jobs op een queue. KEDA start een uitvoering zodra er berichten
+// staan; zonder berichten draait er niets en kost de job niets. Multi-tenant: de tenant komt uit het bericht.
+var intakeJobs = [
+  {
+    naam: 'intake'
+    commando: 'verwerk-intake'
+    queue: 'intake-verwerking'
+  }
+  {
+    naam: 'tekst'
+    commando: 'schrijf-woningtekst'
+    queue: 'intake-tekst'
+  }
+]
+
+resource queueJobs 'Microsoft.App/jobs@2026-01-01' = [for job in (intakeEnabled ? intakeJobs : []): {
+  name: 'job-${job.naam}-cockpit-${env}-${regionShort}'
   location: location
   tags: tags
   identity: {
@@ -390,10 +403,10 @@ resource intakeJob 'Microsoft.App/jobs@2026-01-01' = if (intakeEnabled) {
           pollingInterval: 30
           rules: [
             {
-              name: 'intake-queue'
+              name: '${job.naam}-queue'
               type: 'azure-servicebus'
               metadata: {
-                queueName: 'intake-verwerking'
+                queueName: job.queue
                 namespace: 'sb-cockpit-${env}-${regionShort}'
                 messageCount: '5'
               }
@@ -412,10 +425,10 @@ resource intakeJob 'Microsoft.App/jobs@2026-01-01' = if (intakeEnabled) {
     template: {
       containers: [
         {
-          name: 'intake'
+          name: job.naam
           image: jobsImage
           args: [
-            'verwerk-intake'
+            job.commando
           ]
           env: concat(jobsEnv, [
             {
@@ -440,7 +453,7 @@ resource intakeJob 'Microsoft.App/jobs@2026-01-01' = if (intakeEnabled) {
       ]
     }
   }
-}
+}]
 
 output migratieJobName string = migratieJob.name
 output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'

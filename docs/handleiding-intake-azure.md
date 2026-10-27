@@ -27,6 +27,12 @@ Kies **route A** (Cloud Shell, aanbevolen: de Bicep doet het werk) of **route B*
 
 ## Stap 0: controles vooraf (beide routes)
 
+**Altijd eerst: de juiste subscription.** Cloud Shell kan op een andere subscription beginnen ("Azure subscription 1"); dan geven commando's `ResourceGroupNotFound` of een quotum van 0.
+```bash
+az account show --query "{naam:name, id:id}" -o table          # moet cockpit-dev tonen
+az account set --subscription 3cd2db41-5e0d-4d87-b029-df0fdefabc3d   # als dat niet zo is
+```
+
 Waarom: what-if en de portal tonen niet of een model of quotum in een regio beschikbaar is (les uit ADR-002).
 
 1. **Resource provider.** Portal → *Subscriptions* → de subscription → *Settings* → *Resource providers* → zoek `Microsoft.CognitiveServices`. Staat er niet *Registered*: selecteer en kies *Register*. Wacht tot de status *Registered* is.
@@ -152,7 +158,7 @@ az cognitiveservices account show -g rg-cockpit-dev-neu -n aif-cockpit-dev-sdc \
 
 # Deployments: drie stuks, allemaal DataZoneStandard
 az cognitiveservices account deployment list -g rg-cockpit-dev-neu -n aif-cockpit-dev-sdc \
-  --query "[].{naam:name, model:properties.model.name, versie:properties.model.version, type:sku.name, tpm:sku.capacity}" -o table
+  --query "[].{naam:name, model:properties.model.name, versie:properties.model.version, soort:sku.name, tpm:sku.capacity}" -o table
 
 # Rol voor de managed identity
 az role assignment list --scope $(az cognitiveservices account show -g rg-cockpit-dev-neu -n aif-cockpit-dev-sdc --query id -o tsv) \
@@ -165,7 +171,7 @@ az storage container show --account-name stcockpitdevneu -n intake --auth-mode l
 
 Verwacht:
 - Regio `swedencentral`, `sleutelsUit` = `True`, `publiek` = `Enabled`.
-- Drie deployments `extractie`, `controle`, `embedding`, alle drie `DataZoneStandard` en `50`.
+- Drie deployments `extractie`, `controle`, `embedding`, alle drie `DataZoneStandard` (kolom soort; de CLI laat een kolom met de naam "type" weg) en `50`.
 - Roltoewijzing *Cognitive Services User* voor `id-cockpit-dev-neu`.
 - Queue met lock `PT5M`, max `5`, ttl `P14D`; container `intake` bestaat.
 

@@ -1,4 +1,4 @@
-// Service Bus (Standard) met topics realworks-events, workflow-commands en document-jobs, queue intake-verwerking; de managed identity krijgt Data Owner
+// Service Bus (Standard) met topics realworks-events, workflow-commands en document-jobs, queues intake-verwerking en intake-tekst; de managed identity krijgt Data Owner
 param env string
 
 @description('Korte regiocode in alle resourcenamen, bv. neu (North Europe).')
@@ -49,6 +49,18 @@ resource intakeQueue 'Microsoft.ServiceBus/namespaces/queues@2026-01-01' = {
     lockDuration: 'PT5M'
     maxDeliveryCount: 5
     defaultMessageTimeToLive: 'P14D'
+    deadLetteringOnMessageExpiration: true
+  }
+}
+
+// Queue voor het schrijven van woningteksten (ADR-016); berichten bevatten alleen id's en eventueel een sectiesleutel.
+resource tekstQueue 'Microsoft.ServiceBus/namespaces/queues@2026-01-01' = {
+  parent: serviceBus
+  name: 'intake-tekst'
+  properties: {
+    lockDuration: 'PT5M'
+    maxDeliveryCount: 5
+    defaultMessageTimeToLive: 'P1D'
     deadLetteringOnMessageExpiration: true
   }
 }

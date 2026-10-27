@@ -114,6 +114,19 @@ export interface Woningtekst {
 const TEKST_KOLOMMEN = `id, dossier_id as "dossierId", profiel_id as "profielId", steekwoorden, woningcategorie, status, fout,
   goedgekeurde_versie_id as "goedgekeurdeVersieId", goedgekeurd_door as "goedgekeurdDoor", goedgekeurd_op as "goedgekeurdOp", gewijzigd_op as "gewijzigdOp"`;
 
+/** Adres, plaats en energielabel van de woning van een dossier, uit de Realworks-kopie. */
+export async function woningVanDossier(tx: Tx, tenantId: string, dossierId: string): Promise<{ adres: string | null; plaats: string | null; energieklasse: string | null } | null> {
+  const { rows } = await tx.query(
+    `select w.adres, w.plaats, o.energieklasse
+       from intake_dossier d
+       join woning w on w.tenant_id = d.tenant_id and w.id = d.woning_id
+       left join object o on o.tenant_id = w.tenant_id and o.id = w.object_id
+      where d.tenant_id = $1 and d.id = $2`,
+    [tenantId, dossierId],
+  );
+  return rows[0] ?? null;
+}
+
 export async function woningtekstVanDossier(tx: Tx, tenantId: string, dossierId: string): Promise<Woningtekst | null> {
   const { rows } = await tx.query(`select ${TEKST_KOLOMMEN} from intake_woningtekst where tenant_id = $1 and dossier_id = $2`, [tenantId, dossierId]);
   return rows[0] ?? null;
