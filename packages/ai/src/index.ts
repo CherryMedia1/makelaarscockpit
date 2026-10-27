@@ -5,3 +5,6 @@ export * from "./intake/extractie";
 export * from "./intake/profiel";
 export * from "./tekst/schrijfprofiel-validatie";
 export type * from "./tekst/schrijfprofiel";
+export * from "./tekst/feiten";
+export * from "./tekst/prompt";
+export * from "./tekst/render";
