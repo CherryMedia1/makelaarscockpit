@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://makelaarscockpit.nl/schema/tekst/schrijfprofiel.json",
+  "title": "Schrijfprofiel",
+  "description": "Huisstijl en werkwijze van één kantoor voor woningteksten (ADR-016). Niets kantoorspecifieks in de code; alles hier.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "naam": {
+      "type": "string",
+      "description": "Naam van het profiel, bijv. de naam van het kantoor."
+    },
+    "vragenlijst": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sleutel": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,39}$",
+            "description": "Vaste sleutel, bijv. woonkamer."
+          },
+          "label": {
+            "type": "string",
+            "description": "Label boven het invulveld."
+          },
+          "hint": {
+            "type": "string",
+            "description": "Hulptekst in het invulveld, bijv. 'steekwoorden zijn prima'."
+          },
+          "volgorde": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "verplicht": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sleutel",
+          "label",
+          "hint",
+          "volgorde",
+          "verplicht"
+        ]
+      },
+      "description": "Vragen waarop de medewerker per onderdeel steekwoorden invult.",
+      "minItems": 1
+    },
+    "structuur": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inleidingRegels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Regels voor de inleiding (zonder kop), bijv. opent met een vraag of welkom, noemt het adres, eindigt met een uitnodiging tot bezichtiging."
+        },
+        "secties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "sleutel": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]{0,39}$"
+              },
+              "rol": {
+                "type": "string",
+                "enum": [
+                  "ruimte",
+                  "extra",
+                  "omgeving",
+                  "afsluiting"
+                ]
+              },
+              "invoer": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]{0,39}$"
+                },
+                "description": "Sleutels uit de vragenlijst waarop deze sectie steunt. Leeg = de sectie staat er altijd (bijv. de afsluiting)."
+              },
+              "standaardkop": {
+                "type": "string",
+                "description": "Kop die het model bij voorkeur gebruikt; leeg als de kop vrij is."
+              },
+              "varianten": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Andere toegestane koppen."
+              },
+              "vrijeKop": {
+                "type": "boolean",
+                "description": "Mag het model een eigen kop kiezen in dezelfde stijl?"
+              },
+              "optioneel": {
+                "type": "boolean",
+                "description": "Mag het model de sectie weglaten als ze niets toevoegt (bijv. een extra sectie)?"
+              }
+            },
+            "required": [
+              "sleutel",
+              "rol",
+              "invoer",
+              "standaardkop",
+              "varianten",
+              "vrijeKop",
+              "optioneel"
+            ]
+          },
+          "description": "Secties in volgorde van de tekst.",
+          "minItems": 1
+        },
+        "afsluitingRegels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Regels voor de afsluiting, bijv. een samenvatting van de sterkste punten en een uitnodiging tot bezichtiging."
+        }
+      },
+      "required": [
+        "inleidingRegels",
+        "secties",
+        "afsluitingRegels"
+      ]
+    },
+    "toon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "aanspreekvorm": {
+          "type": "string",
+          "enum": [
+            "je",
+            "u"
+          ]
+        },
+        "regels": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Stijlregels, bijv. 'elk kenmerk krijgt een concreet voordeel'."
+        },
+        "signatuur": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Kenmerkende zinsconstructies, bijv. 'Stel je eens voor: ...'."
+        },
+        "vermijden": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Wat niet mag, bijv. opsommingstekens."
+        }
+      },
+      "required": [
+        "aanspreekvorm",
+        "regels",
+        "signatuur",
+        "vermijden"
+      ]
+    },
+    "lengte": {
+      "type": "object",
+      "description": "Aantal woorden per woningcategorie, zonder vaste blokken.",
+      "additionalProperties": false,
+      "properties": {
+        "appartement": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 50
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 50
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "eengezinswoning": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 50
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 50
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        },
+        "vrijstaand": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "integer",
+              "minimum": 50
+            },
+            "max": {
+              "type": "integer",
+              "minimum": 50
+            }
+          },
+          "required": [
+            "min",
+            "max"
+          ]
+        }
+      },
+      "required": [
+        "appartement",
+        "eengezinswoning",
+        "vrijstaand"
+      ]
+    },
+    "kopstijl": {
+      "type": "string",
+      "enum": [
+        "titel",
+        "hoofdletters"
+      ]
+    },
+    "inleidingLabel": {
+      "type": "string",
+      "description": "Label boven de inleiding, bijv. 'Omschrijving'; leeg = geen label."
+    },
+    "vasteBlokken": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sleutel": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,39}$"
+          },
+          "positie": {
+            "type": "string",
+            "enum": [
+              "einde"
+            ]
+          },
+          "tekst": {
+            "type": "string",
+            "description": "Letterlijke tekst; het model schrijft deze nooit zelf."
+          }
+        },
+        "required": [
+          "sleutel",
+          "positie",
+          "tekst"
+        ]
+      },
+      "description": "Blokken die de code letterlijk toevoegt, zoals een meetclausule."
+    },
+    "model": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "deployment": {
+          "type": "string",
+          "enum": [
+            "tekst"
+          ],
+          "description": "Logische deployment (ADR-014, ADR-016)."
+        },
+        "voorbeelden": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Aantal voorbeeldteksten per generatie."
+        }
+      },
+      "required": [
+        "deployment",
+        "voorbeelden"
+      ]
+    }
+  },
+  "required": [
+    "naam",
+    "vragenlijst",
+    "structuur",
+    "toon",
+    "lengte",
+    "kopstijl",
+    "inleidingLabel",
+    "vasteBlokken",
+    "model"
+  ]
+}

@@ -64,8 +64,8 @@ Het C&R-profiel (versie 1) maak ik op basis van de opdracht en de voorbeeldtekst
 
 | # | Stap | Inhoud | Afhankelijk van |
 |---|---|---|---|
-| B0 | ADR en plan | ADR-016, dit plan | Akkoord Tim |
-| B1 | Schrijfprofiel | JSON Schema en validatie in `packages/ai`, verzonnen testprofiel en -voorbeelden; profielgenerator: schema, analyseprompt en stub | B0 |
+| B0 | ADR en plan ✅ 2026-10-27 | ADR-016, dit plan | Akkoord Tim |
+| B1 | Schrijfprofiel ✅ 2026-10-27 | JSON Schema en validatie in `packages/ai`, verzonnen testprofiel en -voorbeelden; profielgenerator: schema, analyseprompt en stub | B0 |
 | B2 | Database | Migratie 0012 en queries in `packages/db`, integratietest | B1 |
 | B3 | Tekstlogica | Feiten, prompt, outputschema, renderen met vaste blokken (`packages/ai`); controles (`packages/domain`). **Tests eerst.** | B1 |
 | B4 | Job en infra | Command `schrijf-woningtekst` in `apps/jobs`, queue `intake-tekst`, deployment `tekst`, event-job; bronnencontrole; integratietest met opgenomen modelantwoord | B2, B3 |
