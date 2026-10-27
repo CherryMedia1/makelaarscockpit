@@ -34,7 +34,14 @@ export function Invoer({ fout, className = "", ...rest }: InvoerProps) {
   return <input {...rest} aria-invalid={fout ? true : undefined} aria-describedby={fout && rest.id ? `${rest.id}-fout` : undefined} className={`${invoerKlassen(fout)} ${className}`} />;
 }
 
-type KeuzeProps = React.SelectHTMLAttributes<HTMLSelectElement> & { fout?: string | undefined };
+type TekstvakProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & { fout?: string | undefined };
+
+/** Meerregelig veld; zelfde rand en focus als Invoer, hoogte groeit met het aantal regels. */
+export function Tekstvak({ fout, className = "", ...rest }: TekstvakProps) {
+  return <textarea {...rest} aria-invalid={fout ? true : undefined} aria-describedby={fout && rest.id ? `${rest.id}-fout` : undefined} className={`${invoerKlassen(fout).replace("h-10", "min-h-20 py-2")} ${className}`} />;
+}
+
+type KeuzeProps =React.SelectHTMLAttributes<HTMLSelectElement> & { fout?: string | undefined };
 
 export function Keuze({ fout, className = "", children, ...rest }: KeuzeProps) {
   return (

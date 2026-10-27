@@ -48,17 +48,71 @@ export async function intakeDossierVanWoning(tx: Tx, tenantId: string, woningId:
   return rows[0] ?? null;
 }
 
+/** `id` mag vooraf gekozen zijn, zodat het blobpad het bron-id kan bevatten. */
 export async function voegIntakeBronToe(
   tx: Tx,
   tenantId: string,
-  bron: { dossierId: string | null; type: BronType; externId?: string; bestandsnaam?: string; inhoudstype?: string; blobPad?: string; toegevoegdDoor?: string },
+  bron: { id?: string; dossierId: string | null; type: BronType; externId?: string; bestandsnaam?: string; inhoudstype?: string; blobPad?: string; toegevoegdDoor?: string },
 ): Promise<string> {
   const { rows } = await tx.query(
-    `insert into intake_bron (tenant_id, dossier_id, type, extern_id, bestandsnaam, inhoudstype, blob_pad, toegevoegd_door)
-     values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
-    [tenantId, bron.dossierId, bron.type, bron.externId ?? null, bron.bestandsnaam ?? null, bron.inhoudstype ?? null, bron.blobPad ?? null, bron.toegevoegdDoor ?? null],
+    `insert into intake_bron (id, tenant_id, dossier_id, type, extern_id, bestandsnaam, inhoudstype, blob_pad, toegevoegd_door)
+     values (coalesce($1, gen_random_uuid()), $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
+    [bron.id ?? null, tenantId, bron.dossierId, bron.type, bron.externId ?? null, bron.bestandsnaam ?? null, bron.inhoudstype ?? null, bron.blobPad ?? null, bron.toegevoegdDoor ?? null],
   );
   return rows[0].id;
+}
+
+/** De bron van het digitale checklistformulier: één per dossier, met het dossier-id als extern id. */
+export async function checklistBron(tx: Tx, tenantId: string, dossierId: string, gebruikerId: string | null): Promise<string> {
+  await tx.query(
+    `insert into intake_bron (tenant_id, dossier_id, type, extern_id, verwerkstatus, toegevoegd_door)
+     values ($1, $2, 'checklist_form', $3, 'verwerkt', $4)
+     on conflict (tenant_id, type, extern_id) do nothing`,
+    [tenantId, dossierId, dossierId, gebruikerId],
+  );
+  const { rows } = await tx.query("select id from intake_bron where tenant_id = $1 and type = 'checklist_form' and extern_id = $2", [tenantId, dossierId]);
+  return rows[0].id;
+}
+
+/**
+ * Verwijdert open waarden van een bron die bij een nieuwe invoer niet meer meekomen (een leeggemaakt veld in de checklist).
+ * Bevestigde en afgewezen waarden blijven staan. Blijft er op een pad één conflict over, dan is het weer een voorstel.
+ */
+export async function verwijderOpenWaardenVanBron(tx: Tx, tenantId: string, dossierId: string, bronId: string, behoudenPaden: readonly string[]): Promise<number> {
+  const { rows } = await tx.query(
+    `delete from intake_veld
+      where tenant_id = $1 and dossier_id = $2 and bron_id = $3 and status in ('voorstel', 'conflict') and not (pad = any($4::text[]))
+      returning pad`,
+    [tenantId, dossierId, bronId, behoudenPaden],
+  );
+  if (rows.length > 0) {
+    await tx.query(
+      `update intake_veld v set status = 'voorstel', gewijzigd_op = now()
+        where v.tenant_id = $1 and v.dossier_id = $2 and v.pad = any($3::text[]) and v.status = 'conflict'
+          and (select count(*) from intake_veld w where w.tenant_id = $1 and w.dossier_id = $2 and w.pad = v.pad and w.status in ('voorstel', 'conflict', 'bevestigd')) = 1`,
+      [tenantId, dossierId, rows.map((r) => r.pad)],
+    );
+  }
+  return rows.length;
+}
+
+export interface IntakeBron {
+  id: string;
+  type: BronType;
+  bestandsnaam: string | null;
+  verwerkstatus: Verwerkstatus;
+  ontvangenOp: string;
+}
+
+/** Bronnen van een dossier, nieuwste eerst; het checklistformulier telt niet als bestand. */
+export async function intakeBronnen(tx: Tx, tenantId: string, dossierId: string): Promise<IntakeBron[]> {
+  const { rows } = await tx.query(
+    `select id, type, bestandsnaam, verwerkstatus, ontvangen_op as "ontvangenOp"
+       from intake_bron where tenant_id = $1 and dossier_id = $2 and type <> 'checklist_form'
+      order by ontvangen_op desc`,
+    [tenantId, dossierId],
+  );
+  return rows;
 }
 
 /** `fout` is een technische melding of foutcode, nooit inhoud uit de bron. */

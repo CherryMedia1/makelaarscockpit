@@ -3,7 +3,7 @@
 //   (cd db && PGHOST=localhost PGPORT=55432 PGUSER=postgres PGPASSWORD=test PGDATABASE=postgres PGSSLMODE=disable node migrate.mjs)
 //   DB_INTEGRATIE=1 PGHOST=localhost PGPORT=55432 PGUSER=postgres PGPASSWORD=test PGDATABASE=postgres PGSSLMODE=disable npm test -w @makelaarscockpit/db
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { beoordeelIntakeVeld, intakeVelden, moduleAan, openIntakeDossier, verwerkVeldvoorstellen, voegIntakeBronToe, type Veldvoorstel } from "./intake";
+import { beoordeelIntakeVeld, checklistBron, intakeBronnen, intakeVelden, moduleAan, openIntakeDossier, verwerkVeldvoorstellen, verwijderOpenWaardenVanBron, voegIntakeBronToe, type Veldvoorstel } from "./intake";
 import { maakDb, metTenant, type Db } from "./verbinding";
 
 const bewijs = (citaat: string) => ({ citaat, tijdstempel: "00:01:05", pagina: null });
@@ -64,6 +64,26 @@ describe.skipIf(!process.env.DB_INTEGRATIE)("intake in de database", () => {
       const na = await intakeVelden(tx, a, dossier);
       expect(na.filter((v) => v.pad === "installaties.cv.merk").map((v) => [v.waarde, v.status])).toEqual([["Nefit", "afgewezen"], ["Remeha", "bevestigd"]]);
       expect(na.filter((v) => v.pad === "object.bouwjaar").map((v) => [v.waarde, v.status, v.bronId])).toEqual([[1978, "afgewezen", checklist], [1979, "bevestigd", null]]);
+    });
+  });
+
+  it("houdt één checklistbron per dossier en ruimt leeggemaakte checklistwaarden op", async () => {
+    await metTenant(db, a, async (tx) => {
+      const dossier = await openIntakeDossier(tx, a, woningA, gebruikerA);
+      const bron = await checklistBron(tx, a, dossier, gebruikerA);
+      expect(await checklistBron(tx, a, dossier, gebruikerA)).toBe(bron);
+      expect((await intakeBronnen(tx, a, dossier)).some((b) => b.id === bron)).toBe(false);
+
+      const checklist = { id: bron, type: "checklist_form" as const };
+      await verwerkVeldvoorstellen(tx, a, dossier, checklist, [voorstel("object.parkeren", "oprit"), voorstel("object.ligging", "park")]);
+      // Een gesprek zegt iets anders over parkeren: conflict met de checklist.
+      const gesprek = await voegIntakeBronToe(tx, a, { dossierId: dossier, type: "plaud_transcript" });
+      await verwerkVeldvoorstellen(tx, a, dossier, { id: gesprek, type: "plaud_transcript" }, [voorstel("object.parkeren", "garage")]);
+
+      // Parkeren leeggemaakt in de checklist: die waarde verdwijnt en het gesprek is geen conflict meer.
+      expect(await verwijderOpenWaardenVanBron(tx, a, dossier, bron, ["object.ligging"])).toBe(1);
+      const na = (await intakeVelden(tx, a, dossier)).filter((v) => v.pad === "object.parkeren" || v.pad === "object.ligging");
+      expect(na.map((v) => [v.pad, v.waarde, v.status])).toEqual([["object.ligging", "park", "voorstel"], ["object.parkeren", "garage", "voorstel"]]);
     });
   });
 
