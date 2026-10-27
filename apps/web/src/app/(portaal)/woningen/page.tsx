@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { Home } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home } from "lucide-react";
 import { WONING_FASE_LABEL, stappenVoorSpoor, voortgang, type Spoor } from "@makelaarscockpit/domain";
 import { Kaart, KpiTegel, Label, LegeStaat, Melding, PaginaKop, knopKlassen } from "@/components/basis";
 import { Keuze } from "@/components/formulier";
+import { HorizontaalScroller } from "@/components/horizontaal-scroller";
+import { RijenKiezer } from "@/components/rijen-kiezer";
 import { StapTeken } from "@/components/stap-status";
 import { aantal, euro } from "@/lib/format";
 import { haalWoningenBord, type WoningOpBord } from "@/lib/woningen";
 
 export const metadata: Metadata = { title: "Woningen in verkoop" };
+
+const RIJEN_OPTIES = [10, 25, 50] as const;
+const STANDAARD_RIJEN = 25;
 
 const FOUTEN: Record<string, string> = { rechten: "Je hebt geen rechten om dit in te vullen.", onbekend: "Deze woning staat niet meer op het bord." };
 
@@ -22,9 +27,9 @@ async function laad(spoor: Spoor) {
   }
 }
 
-export default async function Woningen({ searchParams }: { searchParams: Promise<{ spoor?: string; makelaar?: string; backoffice?: string; open?: string; fout?: string }> }) {
+export default async function Woningen({ searchParams }: { searchParams: Promise<{ spoor?: string; makelaar?: string; backoffice?: string; open?: string; fout?: string; rijen?: string; pagina?: string }> }) {
   await connection();
-  const { spoor: spoorParam, makelaar = "", backoffice = "", open = "", fout } = await searchParams;
+  const { spoor: spoorParam, makelaar = "", backoffice = "", open = "", fout, rijen: rijenParam, pagina: paginaParam } = await searchParams;
   const spoor: Spoor = spoorParam === "kovk" ? "kovk" : "verkoop";
   const basis = spoor === "kovk" ? "/woningen?spoor=kovk" : "/woningen";
   const d = await laad(spoor);
@@ -51,6 +56,19 @@ export default async function Woningen({ searchParams }: { searchParams: Promise
   const compleet = d.woningen.filter((w) => tel(w).open === 0).length;
   const openStappen = d.woningen.reduce((t, w) => t + tel(w).open, 0);
   const gefilterd = makelaar || backoffice || open;
+
+  const rijen = RIJEN_OPTIES.find((n) => String(n) === rijenParam) ?? STANDAARD_RIJEN;
+  const paginas = Math.max(1, Math.ceil(lijst.length / rijen));
+  const pagina = Math.min(paginas, Math.max(1, Number.parseInt(paginaParam ?? "", 10) || 1));
+  const zichtbaar = lijst.slice((pagina - 1) * rijen, pagina * rijen);
+  // Filters en aantal rijen blijven in de URL; lege waarden en de standaard laten we weg.
+  const behoud: Record<string, string> = Object.fromEntries(
+    Object.entries({ spoor: spoor === "kovk" ? "kovk" : "", makelaar, backoffice, open, rijen: rijen === STANDAARD_RIJEN ? "" : String(rijen) }).filter(([, w]) => w),
+  );
+  const naarPagina = (p: number) => {
+    const q = new URLSearchParams({ ...behoud, ...(p > 1 ? { pagina: String(p) } : {}) }).toString();
+    return q ? `/woningen?${q}` : "/woningen";
+  };
 
   return (
     <>
@@ -97,6 +115,7 @@ export default async function Woningen({ searchParams }: { searchParams: Promise
 
       <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4">
         {spoor === "kovk" && <input type="hidden" name="spoor" value="kovk" />}
+        {behoud.rijen && <input type="hidden" name="rijen" value={behoud.rijen} />}
         <label className="flex flex-col gap-1.5 text-label">
           Makelaar
           <Keuze name="makelaar" defaultValue={makelaar} className="min-w-44">
@@ -136,7 +155,7 @@ export default async function Woningen({ searchParams }: { searchParams: Promise
         </LegeStaat>
       ) : (
         <Kaart>
-          <div className="-m-6 overflow-x-auto">
+          <HorizontaalScroller className="-m-6">
             <table className={`w-full border-collapse text-body-sm ${spoor === "kovk" ? "min-w-[920px]" : "min-w-[1080px]"}`}>
               <thead>
                 <tr className="bg-surface-sunken text-left text-overline text-text-muted">
@@ -151,7 +170,7 @@ export default async function Woningen({ searchParams }: { searchParams: Promise
                 </tr>
               </thead>
               <tbody>
-                {lijst.map((w) => {
+                {zichtbaar.map((w) => {
                   const v = tel(w);
                   return (
                     <tr key={w.id} className="h-12 border-t border-border transition-colors duration-150 hover:bg-primary-subtle/50">
@@ -176,8 +195,29 @@ export default async function Woningen({ searchParams }: { searchParams: Promise
                 })}
               </tbody>
             </table>
-          </div>
+          </HorizontaalScroller>
         </Kaart>
+      )}
+
+      {lijst.length > 0 && (
+        <nav aria-label="Paginering" className="flex flex-wrap items-center justify-between gap-3">
+          <RijenKiezer rijen={rijen} opties={RIJEN_OPTIES} behoud={Object.fromEntries(Object.entries(behoud).filter(([n]) => n !== "rijen"))} />
+          <p className="text-body-sm tabular-nums text-text-muted">
+            {aantal((pagina - 1) * rijen + 1)}–{aantal((pagina - 1) * rijen + zichtbaar.length)} van {aantal(lijst.length)}
+          </p>
+          <div className="flex gap-2">
+            {pagina > 1 ? (
+              <Link href={naarPagina(pagina - 1)} className={knopKlassen("ghost")}><ChevronLeft aria-hidden size={18} />Vorige</Link>
+            ) : (
+              <span aria-disabled className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-[15px] font-semibold text-text-muted"><ChevronLeft aria-hidden size={18} />Vorige</span>
+            )}
+            {pagina < paginas ? (
+              <Link href={naarPagina(pagina + 1)} className={knopKlassen("ghost")}>Volgende<ChevronRight aria-hidden size={18} /></Link>
+            ) : (
+              <span aria-disabled className="inline-flex h-10 items-center gap-2 rounded-md px-4 text-[15px] font-semibold text-text-muted">Volgende<ChevronRight aria-hidden size={18} /></span>
+            )}
+          </div>
+        </nav>
       )}
 
       <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-body-sm text-text-muted">
