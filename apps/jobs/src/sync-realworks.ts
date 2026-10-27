@@ -10,7 +10,8 @@ import {
   type AgendapuntGegevens, type ObjectGegevens, type VerkoopUitRealworks, type WaardebepalingUitRealworks,
 } from "@makelaarscockpit/domain";
 import { haalAgendapunten, haalMedewerkers, haalWonenObjecten, type RealworksApi, type RealworksOpties } from "@makelaarscockpit/realworks";
-import { leesSecret, omgeving, schrijfBlob } from "./azure";
+import { leesSecret, omgeving, schrijfBlob, verwijderBlobsMetPrefix } from "./azure";
+import { schoonIntakeOp } from "./intake/opschonen";
 
 export async function syncRealworks(): Promise<void> {
   const tenantSleutel = omgeving("TENANT_SLEUTEL");
@@ -45,6 +46,10 @@ export async function syncRealworks(): Promise<void> {
 
     await verkopenVastleggen(db, tenant.id, tenant.koppelingVerkopenVanaf, objecten);
     await agendaSpiegelen(db, tenant.id, tenant.afdelingscode, opties, map);
+
+    // Na het bijwerken van het bord: intakedossiers opschonen na verkoop of verwijderen na intrekken (ADR-015).
+    const intake = await schoonIntakeOp(db, tenant.id, vandaagInNederland(), (prefix) => verwijderBlobsMetPrefix("intake", prefix));
+    console.log(`intake: ${intake.opgeschoond} dossier(s) opgeschoond, ${intake.verwijderd} verwijderd`);
   } finally {
     await db.end();
   }

@@ -36,3 +36,14 @@ export async function schrijfBlob(container: string, naam: string, inhoud: strin
 export async function verwijderBlob(container: string, naam: string): Promise<void> {
   await blobService().getContainerClient(container).getBlobClient(naam).deleteIfExists();
 }
+
+/** Verwijdert alle blobs onder een prefix (bijv. de map van één intakedossier); geeft het aantal terug. */
+export async function verwijderBlobsMetPrefix(container: string, prefix: string): Promise<number> {
+  const map = blobService().getContainerClient(container);
+  let aantal = 0;
+  for await (const blob of map.listBlobsFlat({ prefix })) {
+    await map.getBlobClient(blob.name).deleteIfExists();
+    aantal += 1;
+  }
+  return aantal;
+}
