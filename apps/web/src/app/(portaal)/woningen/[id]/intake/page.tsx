@@ -8,7 +8,7 @@ import { Keuze, Veld } from "@/components/formulier";
 import { datum } from "@/lib/format";
 import { haalIntake, type IntakeBron } from "@/lib/intake";
 import { BRON_LABEL, MAX_BESTAND_MB, UPLOAD_SOORTEN } from "@/lib/intake-bestanden";
-import { bestandUploaden, intakeStarten } from "./acties";
+import { bestandUploaden, bronOpnieuwVerwerken, intakeStarten } from "./acties";
 
 export const metadata: Metadata = { title: "Intake" };
 
@@ -22,7 +22,8 @@ const STATUS: Record<IntakeBron["verwerkstatus"], { label: string; soort: "neutr
   verwijderd: { label: "Verwijderd na verkoop", soort: "neutraal" },
 };
 
-type Zoek = { geupload?: string; wachtrij?: string; checklist?: string; fout?: string };
+type Zoek = { geupload?: string; wachtrij?: string; checklist?: string; opnieuw?: string; fout?: string };
+
 
 export default async function Intake({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Zoek> }) {
   await connection();
@@ -48,6 +49,7 @@ export default async function Intake({ params, searchParams }: { params: Promise
           Het bestand staat in het dossier, maar kon niet in de wachtrij worden gezet. Het wordt opnieuw aangeboden zodra de verwerking draait.
         </Melding>
       )}
+      {zoek.opnieuw === "1" && <Melding titel="Opnieuw aangeboden">De bron staat weer in de wachtrij voor verwerking.</Melding>}
       {zoek.checklist === "1" && <Melding titel="Checklist opgeslagen">De ingevulde gegevens staan als voorstel in het profiel.</Melding>}
       {zoek.fout && (
         <Melding soort="fout" titel="Uploaden is niet gelukt">
@@ -125,7 +127,8 @@ export default async function Intake({ params, searchParams }: { params: Promise
                       <th scope="col" className="px-6 py-3 font-semibold">Ontvangen</th>
                       <th scope="col" className="px-3 py-3 font-semibold">Soort</th>
                       <th scope="col" className="px-3 py-3 font-semibold">Bestand</th>
-                      <th scope="col" className="px-6 py-3 font-semibold">Status</th>
+                      <th scope="col" className="px-3 py-3 font-semibold">Status</th>
+                      <th scope="col" className="px-6 py-3"><span className="sr-only">Actie</span></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -134,7 +137,14 @@ export default async function Intake({ params, searchParams }: { params: Promise
                         <td className="whitespace-nowrap px-6">{datum(new Date(b.ontvangenOp))}</td>
                         <td className="whitespace-nowrap px-3">{BRON_LABEL[b.type]}</td>
                         <td className="max-w-64 truncate px-3 text-text-muted">{b.bestandsnaam ?? ""}</td>
-                        <td className="px-6"><Label soort={STATUS[b.verwerkstatus].soort}>{STATUS[b.verwerkstatus].label}</Label></td>
+                        <td className="px-3"><Label soort={STATUS[b.verwerkstatus].soort}>{STATUS[b.verwerkstatus].label}</Label></td>
+                        <td className="px-6 text-right">
+                          {b.opnieuwMogelijk && (
+                            <form action={bronOpnieuwVerwerken.bind(null, woning.id, b.id)}>
+                              <button type="submit" className={knopKlassen("ghost")}>Opnieuw verwerken</button>
+                            </form>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -5,5 +5,7 @@ Jobs die als Container Apps-job in het VNet draaien (ADR-008): uitgaand via het 
 - `sync-realworks`: spiegelt medewerkers en het actuele Wonen-aanbod van een tenant; ruwe antwoorden naar blob `raw-realworks`.
 - `import-verkooplijst`: leest de Excel-historie uit blob `import/<tenant>/verkooplijst.xlsx`, controleert de jaartotalen tegen de Excel en schrijft de verkoopregels en doelstellingen weg. Herhaalbaar: een nieuwe import vervangt de vorige.
 
+- `verwerk-intake`: verwerkt berichten van de queue `intake-verwerking` (ADR-013): PDF naar tekst met Content Understanding, velden extraheren met het Foundry-model `extractie`, samenvoegen in het woningprofiel en het verbruik vastleggen. Eventgestuurd: KEDA start de job zodra er berichten staan. Multi-tenant; de tenant komt uit het bericht. Integratietests met opgenomen modelantwoorden: `DB_INTEGRATIE=1` plus PG*-variabelen, `npm test -w @makelaarscockpit/jobs`.
+
 Starten in Azure: `az containerapp job start -g rg-cockpit-dev-neu -n job-sync-cockpit-dev-neu` (of `job-import-cockpit-dev-neu`).
 Lokaal alleen controleren, zonder database: `ALLEEN_CONTROLE=1 TENANT_SLEUTEL=cr IMPORT_BESTAND="input/excel/<bestand>.xlsx" node apps/jobs/dist/jobs.cjs import-verkooplijst`.

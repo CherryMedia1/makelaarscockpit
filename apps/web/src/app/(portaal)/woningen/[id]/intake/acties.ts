@@ -6,7 +6,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { leesChecklistFormulier } from "@makelaarscockpit/ai";
 import {
-  checklistBron, intakeDossierVanWoning, moduleAan, openIntakeDossier, verwerkVeldvoorstellen, verwijderOpenWaardenVanBron, voegIntakeBronToe,
+  checklistBron, intakeDossierVanWoning, leesIntakeBron, moduleAan, openIntakeDossier, verwerkVeldvoorstellen, verwijderOpenWaardenVanBron, voegIntakeBronToe,
+  zetIntakeBronStatus,
 } from "@makelaarscockpit/db";
 import { metHuidigeTenant } from "@/lib/gegevens";
 import { azureIngesteld, bewaarIntakeBestand, meldIntakeBron } from "@/lib/intake";
@@ -68,6 +69,32 @@ export async function bestandUploaden(woningId: string, formData: FormData): Pro
 }
 
 /** `waarden` per veldnaam; meerkeuzevelden hebben meerdere waarden onder dezelfde naam. */
+/** Biedt een mislukte of blijven hangen bron opnieuw aan de verwerking aan. */
+export async function bronOpnieuwVerwerken(woningId: string, bronId: string): Promise<void> {
+  const sessie = await vereisSessie();
+  const pad = `/woningen/${woningId}/intake`;
+  if (!UUID.test(woningId) || !UUID.test(bronId)) redirect("/woningen?fout=onbekend");
+  const dossierId = await metHuidigeTenant(async (tx) => {
+    if (!(await moduleAan(tx, sessie.tenantId, "intake"))) return null;
+    const dossier = await intakeDossierVanWoning(tx, sessie.tenantId, woningId);
+    const bron = await leesIntakeBron(tx, sessie.tenantId, bronId);
+    if (!dossier || dossier.status !== "open" || !bron || bron.dossierId !== dossier.id) return null;
+    if (bron.verwerkstatus !== "mislukt" && bron.verwerkstatus !== "nieuw") return null;
+    await zetIntakeBronStatus(tx, sessie.tenantId, bronId, "nieuw", null);
+    return dossier.id;
+  });
+  if (!dossierId) redirect(`${pad}?fout=${encodeURIComponent("Deze bron kan niet opnieuw worden verwerkt.")}`);
+  try {
+    await meldIntakeBron({ tenantId: sessie.tenantId, dossierId, bronId });
+  } catch (e) {
+    console.error(`intake: bron ${bronId} niet opnieuw op de wachtrij gezet: ${e instanceof Error ? e.name : "onbekende fout"}`);
+    redirect(`${pad}?wachtrij=0`);
+  }
+  console.log(`intake: bron ${bronId} opnieuw aangeboden door gebruiker ${sessie.gebruikerId}`);
+  revalidatePath(pad);
+  redirect(`${pad}?opnieuw=1`);
+}
+
 export type ChecklistStand = { fouten: Record<string, string>; waarden: Record<string, string[]> | null };
 
 export async function checklistOpslaan(woningId: string, _vorige: ChecklistStand, formData: FormData): Promise<ChecklistStand> {

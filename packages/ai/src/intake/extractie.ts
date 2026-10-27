@@ -70,6 +70,12 @@ export function citaatKomtVoor(bron: string, citaat: string): boolean {
   return c.length > 0 && normaliseer(bron).includes(c);
 }
 
+/** Model achter elke logische deployment; gelijk houden met infra/bicep/modules/foundry.bicep (ADR-014). */
+export const DEPLOYMENT_MODEL = { extractie: "gpt-5.4", controle: "gpt-5.4-mini" } as const;
+
+/** Grens per dossier waarboven de verwerking waarschuwt (plan §9; doel is €3). */
+export const KOSTENGRENS_DOSSIER_EUR = 5;
+
 /**
  * Tarieven in euro per miljoen tokens, Data Zone Standard (EU), Sweden Central, volgens de Azure Retail Prices API
  * op 2026-10-27. Bij een nieuw model of nieuwe tarieven: hier bijwerken.

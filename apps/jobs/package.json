@@ -6,12 +6,16 @@
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist/jobs.cjs --external:pg-native --log-level=warning",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@azure/ai-content-understanding": "^1.1.0",
     "@azure/identity": "^4",
     "@azure/keyvault-secrets": "^4",
+    "@azure/service-bus": "^7.10.0",
     "@azure/storage-blob": "^12",
+    "@makelaarscockpit/ai": "*",
     "@makelaarscockpit/db": "*",
     "@makelaarscockpit/domain": "*",
     "@makelaarscockpit/realworks": "*",

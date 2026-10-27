@@ -22,6 +22,9 @@ param jobsImage string
 @description('Sleutel van de tenant waarvoor de jobs draaien. Het portaal haalt de tenant uit de sessie van de ingelogde gebruiker.')
 param tenantSleutel string = 'cr'
 
+@description('Maak de verwerkingsjob van de intake-module aan (ADR-013); vereist de Foundry-resource uit main.bicep (intakeEnabled).')
+param intakeEnabled bool = env == 'dev'
+
 @description('Login-server van de gedeelde Container Registry.')
 param registryServer string = 'crcockpit${regionShort}.azurecr.io'
 
@@ -357,6 +360,87 @@ resource taakJobs 'Microsoft.App/jobs@2026-01-01' = [
     }
   }
 ]
+
+// Intake-module (ADR-013, ADR-014): verwerkt bronnen van de queue intake-verwerking. KEDA start een uitvoering zodra er
+// berichten staan; zonder berichten draait er niets en kost de job niets. Multi-tenant: de tenant komt uit het bericht.
+resource intakeJob 'Microsoft.App/jobs@2026-01-01' = if (intakeEnabled) {
+  name: 'job-intake-cockpit-${env}-${regionShort}'
+  location: location
+  tags: tags
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${identity.id}': {}
+    }
+  }
+  properties: {
+    environmentId: containerAppsEnv.id
+    workloadProfileName: 'Consumption'
+    configuration: {
+      triggerType: 'Event'
+      // Een uitvoering verwerkt hoogstens 20 berichten; ruim genoeg voor een paar lange PDF's.
+      replicaTimeout: 1800
+      replicaRetryLimit: 0
+      eventTriggerConfig: {
+        parallelism: 1
+        replicaCompletionCount: 1
+        scale: {
+          minExecutions: 0
+          maxExecutions: 3
+          pollingInterval: 30
+          rules: [
+            {
+              name: 'intake-queue'
+              type: 'azure-servicebus'
+              metadata: {
+                queueName: 'intake-verwerking'
+                namespace: 'sb-cockpit-${env}-${regionShort}'
+                messageCount: '5'
+              }
+              identity: identity.id
+            }
+          ]
+        }
+      }
+      registries: [
+        {
+          server: registryServer
+          identity: identity.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'intake'
+          image: jobsImage
+          args: [
+            'verwerk-intake'
+          ]
+          env: concat(jobsEnv, [
+            {
+              name: 'SERVICEBUS_NAMESPACE'
+              value: 'sb-cockpit-${env}-${regionShort}.servicebus.windows.net'
+            }
+            {
+              // Foundry in Sweden Central (ADR-014); toegang alleen met de managed identity.
+              name: 'FOUNDRY_ENDPOINT'
+              value: 'https://aif-cockpit-${env}-sdc.openai.azure.com'
+            }
+            {
+              name: 'CONTENT_UNDERSTANDING_ENDPOINT'
+              value: 'https://aif-cockpit-${env}-sdc.cognitiveservices.azure.com/'
+            }
+          ])
+          resources: {
+            cpu: json('0.5')
+            memory: '1Gi'
+          }
+        }
+      ]
+    }
+  }
+}
 
 output migratieJobName string = migratieJob.name
 output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'

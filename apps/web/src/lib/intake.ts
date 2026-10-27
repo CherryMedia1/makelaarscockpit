@@ -14,9 +14,12 @@ export type { IntakeBron, IntakeVeld };
 export type IntakeOverzicht = {
   woning: { id: string; adres: string | null; plaats: string | null };
   dossier: { id: string; status: "open" | "opgeschoond" } | null;
-  bronnen: IntakeBron[];
+  bronnen: (IntakeBron & { opnieuwMogelijk: boolean })[];
   velden: IntakeVeld[];
 };
+
+/** Een bron die zo lang op "nieuw" staat, is waarschijnlijk niet in de wachtrij gekomen. */
+const HANGT_NA_MS = 10 * 60 * 1000;
 
 /** Het intakedossier van een woning, of null als de woning niet bestaat of de module voor dit kantoor niet aan staat. */
 export async function haalIntake(woningId: string): Promise<IntakeOverzicht | null> {
@@ -30,7 +33,10 @@ export async function haalIntake(woningId: string): Promise<IntakeOverzicht | nu
     return {
       woning: { id: woning.id, adres: woning.adres, plaats: woning.plaats },
       dossier,
-      bronnen: dossier ? await intakeBronnen(tx, sessie.tenantId, dossier.id) : [],
+      bronnen: (dossier ? await intakeBronnen(tx, sessie.tenantId, dossier.id) : []).map((b) => ({
+        ...b,
+        opnieuwMogelijk: b.verwerkstatus === "mislukt" || (b.verwerkstatus === "nieuw" && Date.now() - new Date(b.ontvangenOp).getTime() > HANGT_NA_MS),
+      })),
       velden: dossier ? await intakeVelden(tx, sessie.tenantId, dossier.id) : [],
     };
   });
