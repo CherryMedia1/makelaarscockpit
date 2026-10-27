@@ -10,3 +10,4 @@ export * from "./realworks-gegevens";
 export * from "./toegang/toegang";
 export * from "./intake/samenvoegen";
 export * from "./intake/opschonen";
+export * from "./tekst/controles";

@@ -66,8 +66,8 @@ Het C&R-profiel (versie 1) maak ik op basis van de opdracht en de voorbeeldtekst
 |---|---|---|---|
 | B0 | ADR en plan ✅ 2026-10-27 | ADR-016, dit plan | Akkoord Tim |
 | B1 | Schrijfprofiel ✅ 2026-10-27 | JSON Schema en validatie in `packages/ai`, verzonnen testprofiel en -voorbeelden; profielgenerator: schema, analyseprompt en stub | B0 |
-| B2 | Database | Migratie 0012 en queries in `packages/db`, integratietest | B1 |
-| B3 | Tekstlogica | Feiten, prompt, outputschema, renderen met vaste blokken (`packages/ai`); controles (`packages/domain`). **Tests eerst.** | B1 |
+| B2 | Database ✅ 2026-10-27 | Migratie 0012 en queries in `packages/db`, integratietest | B1 |
+| B3 | Tekstlogica ✅ 2026-10-27 | Feiten, prompt, outputschema, renderen met vaste blokken (`packages/ai`); controles (`packages/domain`). **Tests eerst.** | B1 |
 | B4 | Job en infra | Command `schrijf-woningtekst` in `apps/jobs`, queue `intake-tekst`, deployment `tekst`, event-job; bronnencontrole; integratietest met opgenomen modelantwoord | B2, B3 |
 | B5 | Portaal: tekst | Steekwoorden, feitenblok, schrijven met status, bewerken per sectie, opnieuw (geheel of sectie), goedkeuren, kopiëren en .txt | B4 |
 | B6 | Portaal: profielbeheer | Kantoorbeheerder: profiel bekijken en bewerken (nieuwe versie), voorbeeldteksten toevoegen en verwijderen. Daarna voert Tim het C&R-profiel in | B2 |

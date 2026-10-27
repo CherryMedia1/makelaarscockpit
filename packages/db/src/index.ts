@@ -6,3 +6,4 @@ export * from "./kosten";
 export * from "./waardebepaling";
 export * from "./woningen";
 export * from "./intake";
+export * from "./tekst";
