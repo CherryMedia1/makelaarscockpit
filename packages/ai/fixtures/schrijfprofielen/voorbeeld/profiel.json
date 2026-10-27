@@ -1,0 +1,40 @@
+{
+  "naam": "Kantoor Voorbeeld",
+  "vragenlijst": [
+    { "sleutel": "adres_ligging", "label": "Adres en ligging", "hint": "Straat, plaats, wijk; steekwoorden zijn prima", "volgorde": 1, "verplicht": true },
+    { "sleutel": "woonkamer", "label": "Woonkamer", "hint": "Licht, vloer, haard, ...", "volgorde": 2, "verplicht": false },
+    { "sleutel": "keuken", "label": "Keuken", "hint": "Opstelling, apparatuur", "volgorde": 3, "verplicht": false },
+    { "sleutel": "slaapkamers", "label": "Slaapkamers en badkamer", "hint": "Aantal, grootte, voorzieningen", "volgorde": 4, "verplicht": false },
+    { "sleutel": "buitenruimte", "label": "Buitenruimte", "hint": "Tuin, balkon, ligging op de zon", "volgorde": 5, "verplicht": false },
+    { "sleutel": "overig", "label": "Overig", "hint": "Duurzaamheid, parkeren, berging", "volgorde": 6, "verplicht": false }
+  ],
+  "structuur": {
+    "inleidingRegels": ["Open met een welkom met het adres.", "Noem de drie sterkste punten.", "Eindig met een uitnodiging tot bezichtiging."],
+    "secties": [
+      { "sleutel": "wonen", "rol": "ruimte", "invoer": ["woonkamer", "keuken"], "standaardkop": "Wonen en koken", "varianten": ["Wonen"], "vrijeKop": false, "optioneel": false },
+      { "sleutel": "slapen", "rol": "ruimte", "invoer": ["slaapkamers"], "standaardkop": "Slapen", "varianten": [], "vrijeKop": false, "optioneel": false },
+      { "sleutel": "buiten", "rol": "ruimte", "invoer": ["buitenruimte"], "standaardkop": "Buiten", "varianten": ["Tuin"], "vrijeKop": false, "optioneel": false },
+      { "sleutel": "extra", "rol": "extra", "invoer": ["overig"], "standaardkop": "", "varianten": [], "vrijeKop": true, "optioneel": true },
+      { "sleutel": "omgeving", "rol": "omgeving", "invoer": ["adres_ligging"], "standaardkop": "Wonen in {plaats}", "varianten": [], "vrijeKop": true, "optioneel": false },
+      { "sleutel": "afsluiting", "rol": "afsluiting", "invoer": [], "standaardkop": "Interesse?", "varianten": [], "vrijeKop": false, "optioneel": false }
+    ],
+    "afsluitingRegels": ["Vat de sterkste punten in één zin samen.", "Nodig uit tot een bezichtiging."]
+  },
+  "toon": {
+    "aanspreekvorm": "u",
+    "regels": ["Zakelijk en helder.", "Doorlopend proza, alinea's van twee tot vijf zinnen."],
+    "signatuur": [],
+    "vermijden": ["Opsommingstekens.", "Overdreven bijvoeglijke naamwoorden."]
+  },
+  "lengte": {
+    "appartement": { "min": 250, "max": 400 },
+    "eengezinswoning": { "min": 350, "max": 550 },
+    "vrijstaand": { "min": 450, "max": 700 }
+  },
+  "kopstijl": "titel",
+  "inleidingLabel": "",
+  "vasteBlokken": [
+    { "sleutel": "meetclausule", "positie": "einde", "tekst": "De vermelde maten zijn indicatief en ontleend aan de meetinstructie." }
+  ],
+  "model": { "deployment": "tekst", "voorbeelden": 2 }
+}

@@ -1,23 +1,30 @@
-// Genereert src/intake/woningprofiel.ts uit het JSON Schema. Met --check: faal als het bestand niet actueel is (draait in de tests).
+// Genereert TypeScript-types uit de JSON Schema's in src. Met --check: faal als een bestand niet actueel is (draait in de tests).
 import { readFile, writeFile } from "node:fs/promises";
 import { compile } from "json-schema-to-typescript";
 
-const schemaPad = new URL("../src/intake/woningprofiel.schema.json", import.meta.url);
-const typesPad = new URL("../src/intake/woningprofiel.ts", import.meta.url);
+const SCHEMAS = [
+  { schema: "../src/intake/woningprofiel.schema.json", types: "../src/intake/woningprofiel.ts", naam: "Woningprofiel" },
+  { schema: "../src/tekst/schrijfprofiel.schema.json", types: "../src/tekst/schrijfprofiel.ts", naam: "Schrijfprofiel" },
+];
 
-const schema = JSON.parse(await readFile(schemaPad, "utf8"));
-const types = await compile(schema, "Woningprofiel", {
-  bannerComment: "// Gegenereerd uit woningprofiel.schema.json met `npm run genereer -w @makelaarscockpit/ai`. Niet met de hand wijzigen.",
-  additionalProperties: false,
-  style: { semi: true, singleQuote: false, printWidth: 120 },
-});
-
-if (process.argv.includes("--check")) {
-  const huidig = await readFile(typesPad, "utf8").catch(() => "");
-  if (huidig !== types) {
-    console.error("woningprofiel.ts is niet actueel; draai npm run genereer -w @makelaarscockpit/ai");
-    process.exit(1);
+let verouderd = false;
+for (const s of SCHEMAS) {
+  const schemaPad = new URL(s.schema, import.meta.url);
+  const typesPad = new URL(s.types, import.meta.url);
+  const bestand = s.schema.split("/").pop();
+  const types = await compile(JSON.parse(await readFile(schemaPad, "utf8")), s.naam, {
+    bannerComment: `// Gegenereerd uit ${bestand} met \`npm run genereer -w @makelaarscockpit/ai\`. Niet met de hand wijzigen.`,
+    additionalProperties: false,
+    ignoreMinAndMaxItems: true,
+    style: { semi: true, singleQuote: false, printWidth: 120 },
+  });
+  if (process.argv.includes("--check")) {
+    if ((await readFile(typesPad, "utf8").catch(() => "")) !== types) {
+      console.error(`${s.types} is niet actueel; draai npm run genereer -w @makelaarscockpit/ai`);
+      verouderd = true;
+    }
+  } else {
+    await writeFile(typesPad, types);
   }
-} else {
-  await writeFile(typesPad, types);
 }
+if (verouderd) process.exit(1);
