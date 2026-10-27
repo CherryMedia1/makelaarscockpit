@@ -115,6 +115,19 @@ export async function intakeBronnen(tx: Tx, tenantId: string, dossierId: string)
   return rows;
 }
 
+/** Eén bron, voor de verwerkingsjob. */
+export async function leesIntakeBron(
+  tx: Tx,
+  tenantId: string,
+  bronId: string,
+): Promise<{ id: string; dossierId: string | null; type: BronType; blobPad: string | null; verwerkstatus: Verwerkstatus } | null> {
+  const { rows } = await tx.query(
+    `select id, dossier_id as "dossierId", type, blob_pad as "blobPad", verwerkstatus from intake_bron where tenant_id = $1 and id = $2`,
+    [tenantId, bronId],
+  );
+  return rows[0] ?? null;
+}
+
 /** `fout` is een technische melding of foutcode, nooit inhoud uit de bron. */
 export async function zetIntakeBronStatus(tx: Tx, tenantId: string, bronId: string, status: Verwerkstatus, fout: string | null = null): Promise<void> {
   await tx.query(
@@ -210,6 +223,12 @@ export async function beoordeelIntakeVeld(tx: Tx, tenantId: string, veldId: stri
       [tenantId, dossierId, pad, JSON.stringify(beoordeling.waarde), gebruikerId],
     );
   }
+}
+
+/** Totale AI-kosten van een dossier in euro, voor de bewaking (plan §9). */
+export async function intakeKostenDossier(tx: Tx, tenantId: string, dossierId: string): Promise<number> {
+  const { rows } = await tx.query("select coalesce(sum(kosten_eur), 0)::float as totaal from intake_verbruik where tenant_id = $1 and dossier_id = $2", [tenantId, dossierId]);
+  return rows[0].totaal;
 }
 
 export async function registreerIntakeVerbruik(

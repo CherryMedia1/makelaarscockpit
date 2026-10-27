@@ -173,6 +173,9 @@ Stuur de uitvoer van deze controle door. Daarna stelt de verwerkingsjob (stap A7
 
 ## Na route B: Bicep gelijk houden
 
+De roltoewijzing uit B5 heeft in Azure een andere naam dan Bicep zou kiezen; een tweede toewijzing van dezelfde rol faalt met `RoleAssignmentExists`. Daarom staat `foundryRolHandmatig = true` in `dev.bicepparam`: Bicep laat die rol dan met rust.
+
+
 Route B maakt dezelfde resources als de Bicep. Draai bij de eerstvolgende Bicep-deploy naar dev eerst de what-if: die hoort voor deze resources *NoChange* te geven. Ziet de what-if verschillen, dan wijkt een instelling af van de tabel bovenaan; pas die in de portal aan, niet in de Bicep.
 
 ## Als iets vastloopt

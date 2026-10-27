@@ -4,7 +4,7 @@ import { SecretClient } from "@azure/keyvault-secrets";
 import { BlobServiceClient } from "@azure/storage-blob";
 
 const clientId = process.env.AZURE_CLIENT_ID;
-const credential = new DefaultAzureCredential(clientId ? { managedIdentityClientId: clientId } : {});
+export const credential = new DefaultAzureCredential(clientId ? { managedIdentityClientId: clientId } : {});
 
 export function omgeving(naam: string): string {
   const waarde = process.env[naam];

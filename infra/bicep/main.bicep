@@ -48,6 +48,9 @@ param foundryCapaciteit object = {
   embedding: 50
 }
 
+@description('De rol van de managed identity op Foundry is handmatig in de portal toegewezen (route B van de handleiding); Bicep slaat hem dan over.')
+param foundryRolHandmatig bool = false
+
 @description('Tags voor alle resources.')
 param tags object = {
   project: 'makelaarscockpit'
@@ -180,6 +183,7 @@ module foundry 'modules/foundry.bicep' = if (intakeEnabled) {
     tags: tags
     identityPrincipalId: identity.outputs.principalId
     capaciteit: foundryCapaciteit
+    rolToewijzen: !foundryRolHandmatig
   }
 }
 

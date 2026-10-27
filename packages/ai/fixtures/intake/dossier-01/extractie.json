@@ -28,6 +28,7 @@
       "zekerheid": 0.9
     },
     "woonoppervlakte_m2": null,
+    "garage_m2": null,
     "inhoud_m3": null,
     "perceel_m2": null,
     "aantal_kamers": null,
@@ -59,101 +60,16 @@
           "pagina": null
         },
         "zekerheid": 0.9
-      }
+      },
+      "kenmerken": [],
+      "achterom": null
     },
-    "parkeren": null
+    "parkeren": null,
+    "kruipruimte": null
   },
   "indeling": [],
-  "installaties": {
-    "cv": {
-      "merk": {
-        "waarde": "Remeha",
-        "bewijs": {
-          "citaat": "We hebben een Remeha Tzerra uit 2019",
-          "tijdstempel": "00:01:05",
-          "pagina": null
-        },
-        "zekerheid": 0.9
-      },
-      "type": {
-        "waarde": "Tzerra",
-        "bewijs": {
-          "citaat": "We hebben een Remeha Tzerra uit 2019",
-          "tijdstempel": "00:01:05",
-          "pagina": null
-        },
-        "zekerheid": 0.8
-      },
-      "bouwjaar": {
-        "waarde": 2019,
-        "bewijs": {
-          "citaat": "We hebben een Remeha Tzerra uit 2019",
-          "tijdstempel": "00:01:05",
-          "pagina": null
-        },
-        "zekerheid": 0.9
-      },
-      "eigendom": {
-        "waarde": "eigendom",
-        "bewijs": {
-          "citaat": "die is van onszelf, niet gehuurd",
-          "tijdstempel": "00:01:05",
-          "pagina": null
-        },
-        "zekerheid": 0.9
-      }
-    },
-    "warmtepomp": {
-      "aanwezig": null,
-      "type": null,
-      "bouwjaar": null
-    },
-    "zonnepanelen": {
-      "aantal": {
-        "waarde": 10,
-        "bewijs": {
-          "citaat": "er liggen tien zonnepanelen op het dak",
-          "tijdstempel": "00:01:14",
-          "pagina": null
-        },
-        "zekerheid": 0.9
-      },
-      "bouwjaar": {
-        "waarde": 2021,
-        "bewijs": {
-          "citaat": "sinds 2021",
-          "tijdstempel": "00:01:14",
-          "pagina": null
-        },
-        "zekerheid": 0.9
-      }
-    },
-    "ventilatie": null,
-    "isolatie": {
-      "dak": {
-        "waarde": true,
-        "bewijs": {
-          "citaat": "Dak is geïsoleerd",
-          "tijdstempel": "00:01:43",
-          "pagina": null
-        },
-        "zekerheid": 0.9
-      },
-      "gevel": null,
-      "vloer": null,
-      "glas": {
-        "waarde": "HR++, behalve in de schuur",
-        "bewijs": {
-          "citaat": "overal HR++ glas behalve in de schuur",
-          "tijdstempel": "00:01:43",
-          "pagina": null
-        },
-        "zekerheid": 0.85
-      }
-    },
-    "energielabel": null
-  },
   "keuken": {
+    "stijl": null,
     "opstelling": {
       "waarde": "hoekkeuken",
       "bewijs": {
@@ -163,6 +79,7 @@
       },
       "zekerheid": 0.9
     },
+    "merk": null,
     "bouwjaar": {
       "waarde": 2016,
       "bewijs": {
@@ -244,6 +161,7 @@
         },
         "zekerheid": 0.8
       },
+      "stijl": null,
       "bouwjaar": {
         "waarde": 2020,
         "bewijs": {
@@ -275,6 +193,116 @@
       ]
     }
   ],
+  "installaties": {
+    "cv": {
+      "merk": {
+        "waarde": "Remeha",
+        "bewijs": {
+          "citaat": "We hebben een Remeha Tzerra uit 2019",
+          "tijdstempel": "00:01:05",
+          "pagina": null
+        },
+        "zekerheid": 0.9
+      },
+      "type": {
+        "waarde": "Tzerra",
+        "bewijs": {
+          "citaat": "We hebben een Remeha Tzerra uit 2019",
+          "tijdstempel": "00:01:05",
+          "pagina": null
+        },
+        "zekerheid": 0.8
+      },
+      "bouwjaar": {
+        "waarde": 2019,
+        "bewijs": {
+          "citaat": "We hebben een Remeha Tzerra uit 2019",
+          "tijdstempel": "00:01:05",
+          "pagina": null
+        },
+        "zekerheid": 0.9
+      },
+      "eigendom": {
+        "waarde": "eigendom",
+        "bewijs": {
+          "citaat": "die is van onszelf, niet gehuurd",
+          "tijdstempel": "00:01:05",
+          "pagina": null
+        },
+        "zekerheid": 0.9
+      },
+      "onderhoudscontract": null,
+      "laatst_onderhouden": null
+    },
+    "warmtepomp": {
+      "aanwezig": null,
+      "type": null,
+      "bouwjaar": null
+    },
+    "zonnepanelen": {
+      "aantal": {
+        "waarde": 10,
+        "bewijs": {
+          "citaat": "er liggen tien zonnepanelen op het dak",
+          "tijdstempel": "00:01:14",
+          "pagina": null
+        },
+        "zekerheid": 0.9
+      },
+      "bouwjaar": {
+        "waarde": 2021,
+        "bewijs": {
+          "citaat": "sinds 2021",
+          "tijdstempel": "00:01:14",
+          "pagina": null
+        },
+        "zekerheid": 0.9
+      },
+      "opbrengst_kwh": null
+    },
+    "zonneboiler": null,
+    "ventilatie": null,
+    "groepenkast": {
+      "stijl": null,
+      "aantal_groepen": null,
+      "aardlek": null
+    },
+    "isolatie": {
+      "dak": {
+        "waarde": true,
+        "bewijs": {
+          "citaat": "Dak is geïsoleerd",
+          "tijdstempel": "00:01:43",
+          "pagina": null
+        },
+        "zekerheid": 0.9
+      },
+      "gevel": null,
+      "vloer": null,
+      "glas": {
+        "waarde": "HR++, behalve in de schuur",
+        "bewijs": {
+          "citaat": "overal HR++ glas behalve in de schuur",
+          "tijdstempel": "00:01:43",
+          "pagina": null
+        },
+        "zekerheid": 0.85
+      }
+    },
+    "energielabel": null
+  },
+  "kozijnen": {
+    "materiaal": [],
+    "rolluiken": null,
+    "screens": null,
+    "schilderwerk_jaar": null
+  },
+  "dak": {
+    "platdak": {
+      "bedekking": null,
+      "jaar": null
+    }
+  },
   "onderhoud": [
     {
       "wat": {
@@ -297,26 +325,17 @@
       }
     }
   ],
-  "verkoopargumenten": [
-    {
-      "waarde": "het licht in de woonkamer",
-      "bewijs": {
-        "citaat": "Het licht in de woonkamer",
-        "tijdstempel": "00:03:48",
-        "pagina": null
-      },
-      "zekerheid": 0.9
-    },
-    {
-      "waarde": "ligging aan het park",
-      "bewijs": {
-        "citaat": "dat je zo in het park staat",
-        "tijdstempel": "00:03:48",
-        "pagina": null
-      },
-      "zekerheid": 0.9
-    }
-  ],
+  "gebreken": {
+    "bekende_gebreken": [],
+    "asbest": null
+  },
+  "vve": {
+    "bijdrage_per_maand": null,
+    "inbegrepen": [],
+    "vergaderingen_per_jaar": null,
+    "reservefonds": null,
+    "stukken": []
+  },
   "zaken": {
     "mee_te_nemen": [
       {
@@ -341,6 +360,26 @@
       }
     ]
   },
+  "verkoopargumenten": [
+    {
+      "waarde": "het licht in de woonkamer",
+      "bewijs": {
+        "citaat": "Het licht in de woonkamer",
+        "tijdstempel": "00:03:48",
+        "pagina": null
+      },
+      "zekerheid": 0.9
+    },
+    {
+      "waarde": "ligging aan het park",
+      "bewijs": {
+        "citaat": "dat je zo in het park staat",
+        "tijdstempel": "00:03:48",
+        "pagina": null
+      },
+      "zekerheid": 0.9
+    }
+  ],
   "planning": {
     "beschikbaarheid_verkoper": {
       "waarde": "doordeweeks na 15:00",
@@ -364,6 +403,8 @@
     "wensen_foto": null,
     "wensen_styling": null,
     "keuring_gewenst": null,
-    "meetrapport_aanwezig": null
-  }
+    "meetrapport_aanwezig": null,
+    "voorkeur_passeerdatum": null
+  },
+  "opmerkingen": []
 }

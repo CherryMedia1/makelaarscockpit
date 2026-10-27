@@ -4,6 +4,7 @@ import { importVerkooplijst } from "./import-verkooplijst";
 import { importWaardebepalingen } from "./import-waardebepalingen";
 import { importWoningen } from "./import-woningen";
 import { syncRealworks } from "./sync-realworks";
+import { verwerkIntake } from "./verwerk-intake";
 
 const commandos: Record<string, () => Promise<void>> = {
   "sync-realworks": syncRealworks,
@@ -11,6 +12,7 @@ const commandos: Record<string, () => Promise<void>> = {
   "import-waardebepalingen": importWaardebepalingen,
   "import-woningen": importWoningen,
   "gebruikers-bijwerken": gebruikersBijwerken,
+  "verwerk-intake": verwerkIntake,
 };
 
 async function main(): Promise<void> {

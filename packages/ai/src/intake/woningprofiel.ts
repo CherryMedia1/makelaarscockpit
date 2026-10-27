@@ -34,6 +34,10 @@ export interface Woningprofiel {
      */
     woonoppervlakte_m2?: number;
     /**
+     * Oppervlakte van de garage of andere inpandige ruimte in m².
+     */
+    garage_m2?: number;
+    /**
      * Bruto inhoud in m³.
      */
     inhoud_m3?: number;
@@ -65,11 +69,35 @@ export interface Woningprofiel {
        * Ligging van de (achter)tuin op de zon.
        */
       orientatie?: "noord" | "noordoost" | "oost" | "zuidoost" | "zuid" | "zuidwest" | "west" | "noordwest";
+      /**
+       * Wat er in de tuin is.
+       */
+      kenmerken?: (
+        | "bestrating"
+        | "gras"
+        | "kunstgras"
+        | "borders"
+        | "vijver"
+        | "vlonders"
+        | "schuttingen"
+        | "tuinhuis"
+        | "schuur"
+        | "zonnescherm"
+        | "overkapping"
+      )[];
+      /**
+       * Is er een achterom?
+       */
+      achterom?: boolean;
     };
     /**
      * Parkeergelegenheid, bijv. eigen oprit, garage, openbaar, vergunning.
      */
     parkeren?: string;
+    /**
+     * Heeft de woning een kruipruimte?
+     */
+    kruipruimte?: boolean;
   };
   /**
    * Indeling per verdieping.
@@ -79,6 +107,21 @@ export interface Woningprofiel {
      * Bijv. begane grond, eerste verdieping, zolder, kelder.
      */
     verdieping?: string;
+    /**
+     * Constructie van de vloer.
+     */
+    vloerconstructie?: "beton" | "hout";
+    /**
+     * Afwerking van de vloeren.
+     */
+    vloerafwerking?: ("hout" | "laminaat" | "tegels" | "pvc" | "vloerbedekking" | "gietvloer" | "natuursteen")[];
+    vloerverwarming?: boolean;
+    convectorput?: boolean;
+    /**
+     * Afwerking van de wanden.
+     */
+    wandafwerking?: ("strak gestukt" | "spachtelputz" | "structuurverf" | "granol" | "spuitwerk" | "behang")[];
+    aantal_slaapkamers?: number;
     ruimtes?: {
       /**
        * Bijv. woonkamer, keuken, slaapkamer 1.
@@ -89,6 +132,70 @@ export interface Woningprofiel {
        */
       omschrijving?: string;
     }[];
+  }[];
+  keuken?: {
+    /**
+     * Uitstraling van de keuken.
+     */
+    stijl?: "modern" | "neutraal" | "gedateerd";
+    /**
+     * Bijv. hoekkeuken, rechte opstelling, kookeiland.
+     */
+    opstelling?: string;
+    /**
+     * Merk van de keuken.
+     */
+    merk?: string;
+    bouwjaar?: number;
+    apparatuur?: {
+      soort?:
+        | "koelkast"
+        | "vriezer"
+        | "koel-vriescombinatie"
+        | "vaatwasser"
+        | "oven"
+        | "combi-oven"
+        | "stoomoven"
+        | "magnetron"
+        | "quooker"
+        | "gaskookplaat"
+        | "inductiekookplaat"
+        | "keramische kookplaat"
+        | "afzuigkap"
+        | "overig";
+      merk?: string;
+      /**
+       * Bijv. nieuw, goed, gedateerd.
+       */
+      staat?: string;
+    }[];
+  };
+  /**
+   * Badkamers en toiletten.
+   */
+  sanitair?: {
+    /**
+     * Bijv. badkamer eerste verdieping, toilet begane grond.
+     */
+    ruimte?: string;
+    stijl?: "modern" | "neutraal" | "gedateerd";
+    bouwjaar?: number;
+    /**
+     * Voorzieningen in de ruimte.
+     */
+    voorzieningen?: (
+      | "inloopdouche"
+      | "douchebak"
+      | "bad"
+      | "bubbelbad"
+      | "toilet"
+      | "zwevend toilet"
+      | "badmeubel"
+      | "wastafel"
+      | "dubbele wastafel"
+      | "centrale afzuiging"
+      | "sanibroyeur"
+    )[];
   }[];
   /**
    * Technische installaties en energie.
@@ -105,6 +212,14 @@ export interface Woningprofiel {
        * Is de ketel van de verkoper, gehuurd of geleaset?
        */
       eigendom?: "eigendom" | "huur" | "lease";
+      /**
+       * Is er een onderhoudscontract voor de ketel?
+       */
+      onderhoudscontract?: boolean;
+      /**
+       * Jaar van het laatste onderhoud.
+       */
+      laatst_onderhouden?: number;
     };
     warmtepomp?: {
       aanwezig?: boolean;
@@ -117,13 +232,29 @@ export interface Woningprofiel {
     zonnepanelen?: {
       aantal?: number;
       bouwjaar?: number;
+      /**
+       * Opbrengst in kWh per jaar.
+       */
+      opbrengst_kwh?: number;
     };
+    zonneboiler?: boolean;
     /**
      * Bijv. natuurlijk, mechanisch, WTW.
      */
     ventilatie?: string;
+    groepenkast?: {
+      stijl?: "modern" | "gedateerd";
+      aantal_groepen?: number;
+      /**
+       * Heeft de groepenkast aardlekschakelaars?
+       */
+      aardlek?: boolean;
+    };
     isolatie?: {
       dak?: boolean;
+      /**
+       * Spouwmuurisolatie.
+       */
       gevel?: boolean;
       vloer?: boolean;
       /**
@@ -133,38 +264,30 @@ export interface Woningprofiel {
     };
     energielabel?: "A++++" | "A+++" | "A++" | "A+" | "A" | "B" | "C" | "D" | "E" | "F" | "G";
   };
-  keuken?: {
-    /**
-     * Bijv. hoekkeuken, rechte opstelling, kookeiland.
-     */
-    opstelling?: string;
-    bouwjaar?: number;
-    apparatuur?: {
-      /**
-       * Bijv. inductiekookplaat, vaatwasser, combi-oven.
-       */
-      soort?: string;
-      merk?: string;
-      /**
-       * Bijv. nieuw, goed, gedateerd.
-       */
-      staat?: string;
-    }[];
-  };
   /**
-   * Badkamers en toiletten.
+   * Kozijnen, zonwering en schilderwerk.
    */
-  sanitair?: {
+  kozijnen?: {
+    materiaal?: ("hout" | "kunststof" | "aluminium")[];
+    rolluiken?: "geen" | "elektrisch" | "handmatig";
+    screens?: "geen" | "elektrisch" | "handmatig";
     /**
-     * Bijv. badkamer eerste verdieping, toilet begane grond.
+     * Jaar van het laatste buitenschilderwerk.
      */
-    ruimte?: string;
-    bouwjaar?: number;
+    schilderwerk_jaar?: number;
+  };
+  dak?: {
     /**
-     * Bijv. inloopdouche, ligbad, wastafelmeubel, zwevend toilet.
+     * Plat dak.
      */
-    voorzieningen?: string[];
-  }[];
+    platdak?: {
+      bedekking?: "bitumen" | "epdm" | "overig";
+      /**
+       * Jaar waarin de dakbedekking is aangebracht.
+       */
+      jaar?: number;
+    };
+  };
   /**
    * Uitgevoerd onderhoud en vernieuwingen.
    */
@@ -173,9 +296,40 @@ export interface Woningprofiel {
     jaar?: number;
   }[];
   /**
-   * Wat de verkoper zelf het mooiste aan de woning vindt, in de woorden van de verkoper.
+   * Gebreken en asbest.
    */
-  verkoopargumenten?: string[];
+  gebreken?: {
+    /**
+     * Gebreken die er zijn of zijn geweest, voor de mededelingsplicht.
+     */
+    bekende_gebreken?: string[];
+    /**
+     * Is er (mogelijk) asbest aanwezig?
+     */
+    asbest?: "ja" | "nee" | "onbekend";
+  };
+  /**
+   * Alleen bij een appartement.
+   */
+  vve?: {
+    /**
+     * Servicekosten aan de VvE in euro per maand.
+     */
+    bijdrage_per_maand?: number;
+    /**
+     * Wat in de bijdrage inbegrepen is.
+     */
+    inbegrepen?: ("opstal" | "onderhoud" | "schoonmaak" | "glazenwassen" | "voorschot gwl")[];
+    vergaderingen_per_jaar?: number;
+    /**
+     * Stand van het reservefonds in euro.
+     */
+    reservefonds?: number;
+    /**
+     * Welke stukken aanwezig zijn.
+     */
+    stukken?: ("mjop" | "financieel jaaroverzicht" | "begroting" | "notulen" | "inschrijving kvk")[];
+  };
   /**
    * Voorbereiding van de Lijst van Zaken.
    */
@@ -183,6 +337,10 @@ export interface Woningprofiel {
     mee_te_nemen?: string[];
     over_te_nemen?: string[];
   };
+  /**
+   * Wat de verkoper zelf het mooiste aan de woning vindt, in de woorden van de verkoper.
+   */
+  verkoopargumenten?: string[];
   /**
    * Afspraken voor de verkoopvoorbereiding. Wordt na verkoop verwijderd (ADR-015).
    */
@@ -194,5 +352,13 @@ export interface Woningprofiel {
     wensen_styling?: string;
     keuring_gewenst?: boolean;
     meetrapport_aanwezig?: boolean;
+    /**
+     * Voorkeur van de verkoper voor de passeerdatum.
+     */
+    voorkeur_passeerdatum?: string;
   };
+  /**
+   * Overige opmerkingen over de woning.
+   */
+  opmerkingen?: string[];
 }

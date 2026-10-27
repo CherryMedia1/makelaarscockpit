@@ -6,7 +6,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import type { Formuliergroep, Formulierveld } from "@makelaarscockpit/ai";
 import { Kaart, Melding, knopKlassen } from "@/components/basis";
-import { Invoer, Keuze, Tekstvak, Veld } from "@/components/formulier";
+import { Foutregel, Invoer, Keuze, Selectievakje, Tekstvak, Veld } from "@/components/formulier";
 import type { ChecklistStand } from "../acties";
 
 type Props = {
@@ -16,6 +16,22 @@ type Props = {
 };
 
 const id = (pad: string) => `veld-${pad.replace(/[^a-z0-9]+/gi, "-")}`;
+// Opties staan in kleine letters in het schema; alleen de weergave krijgt een hoofdletter.
+const toon = (optie: string) => optie.charAt(0).toUpperCase() + optie.slice(1);
+
+function Meerkeuze({ veld, gekozen, fout }: { veld: Formulierveld; gekozen: string[]; fout: string | undefined }) {
+  return (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className="text-label">{veld.label}</legend>
+      <div className="flex flex-wrap gap-x-5">
+        {(veld.opties ?? []).map((o) => (
+          <Selectievakje key={o} id={`${id(veld.pad)}-${id(o)}`} name={veld.pad} value={o} label={toon(o)} defaultChecked={gekozen.includes(o)} />
+        ))}
+      </div>
+      {fout && <Foutregel>{fout}</Foutregel>}
+    </fieldset>
+  );
+}
 
 function Invoerveld({ veld, waarde, fout }: { veld: Formulierveld; waarde: string; fout: string | undefined }) {
   const gemeen = { id: id(veld.pad), name: veld.pad, defaultValue: waarde, fout };
@@ -26,7 +42,7 @@ function Invoerveld({ veld, waarde, fout }: { veld: Formulierveld; waarde: strin
         <Keuze {...gemeen}>
           <option value="">Onbekend</option>
           {(veld.soort === "janee" ? ["ja", "nee"] : (veld.opties ?? [])).map((o) => (
-            <option key={o} value={o}>{o}</option>
+            <option key={o} value={o}>{toon(o)}</option>
           ))}
         </Keuze>
       ) : veld.soort === "regels" ? (
@@ -65,8 +81,12 @@ export function ChecklistFormulier({ actie, groepen, terugNaar }: Props) {
                   {sectie && <legend className="mb-1 text-overline text-text-muted">{sectie}</legend>}
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {velden.map((veld) => (
-                      <div key={veld.pad} className={veld.soort === "regels" ? "sm:col-span-2 lg:col-span-3" : undefined}>
-                        <Invoerveld veld={veld} waarde={stand.waarden?.[veld.pad] ?? veld.waarde} fout={stand.fouten[veld.pad]} />
+                      <div key={veld.pad} className={veld.soort === "regels" || veld.soort === "meerkeuze" ? "sm:col-span-2 lg:col-span-3" : undefined}>
+                        {veld.soort === "meerkeuze" ? (
+                          <Meerkeuze veld={veld} gekozen={stand.waarden ? (stand.waarden[veld.pad] ?? []) : (veld.gekozen ?? [])} fout={stand.fouten[veld.pad]} />
+                        ) : (
+                          <Invoerveld veld={veld} waarde={stand.waarden ? (stand.waarden[veld.pad]?.[0] ?? "") : veld.waarde} fout={stand.fouten[veld.pad]} />
+                        )}
                       </div>
                     ))}
                   </div>

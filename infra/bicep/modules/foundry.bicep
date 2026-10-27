@@ -12,6 +12,9 @@ param tags object = {}
 @description('Principal-id van de managed identity die modellen en Content Understanding aanroept.')
 param identityPrincipalId string
 
+@description('Ken de rol Cognitive Services User toe aan de managed identity. Uit als die rol al handmatig is toegewezen (handleiding-intake-azure.md, route B): Azure staat geen tweede toewijzing van dezelfde rol toe.')
+param rolToewijzen bool = true
+
 @description('Capaciteit per deployment in duizenden tokens per minuut (quota per subscription en regio).')
 param capaciteit object = {
   extractie: 50
@@ -101,7 +104,7 @@ resource modelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2025
   }
 ]
 
-resource identityUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+resource identityUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (rolToewijzen) {
   name: guid(foundry.id, identityPrincipalId, cognitiveServicesUserRoleId)
   scope: foundry
   properties: {
