@@ -5,7 +5,7 @@ import { connection } from "next/server";
 import { DefaultAzureCredential } from "@azure/identity";
 import { ServiceBusClient } from "@azure/service-bus";
 import { BlobServiceClient } from "@azure/storage-blob";
-import { intakeBronnen, intakeDossierVanWoning, intakeVelden, leesWoningen, moduleAan, type IntakeBron, type IntakeVeld } from "@makelaarscockpit/db";
+import { intakeBronnen, intakeDossierVanWoning, intakeVelden, leesIntakeBron, leesWoningen, moduleAan, type IntakeBron, type IntakeVeld } from "@makelaarscockpit/db";
 import { heeftDatabase, metHuidigeTenant } from "./gegevens";
 import { vandaagInNederland } from "./woningen";
 
@@ -72,6 +72,30 @@ export async function bewaarIntakeBestand(blobPad: string, inhoud: Buffer, inhou
   if (!clients) throw new Error("opslag niet ingesteld");
   await clients.blob.getContainerClient("intake").getBlockBlobClient(blobPad).uploadData(inhoud, { blobHTTPHeaders: { blobContentType: inhoudstype } });
 }
+
+/**
+ * Het bestand van een bron, alleen als die bij het intakedossier van deze woning hoort en nog niet is opgeschoond.
+ * `null` als dat niet zo is; de aanroeper toont dan "niet gevonden".
+ */
+export async function leesIntakeBestand(woningId: string, bronId: string): Promise<{ type: IntakeBron["type"]; bestandsnaam: string | null; inhoudstype: string; inhoud: Buffer } | null> {
+  if (!heeftDatabase()) return null;
+  const bron = await metHuidigeTenant(async (tx, sessie) => {
+    if (!(await moduleAan(tx, sessie.tenantId, "intake"))) return null;
+    const dossier = await intakeDossierVanWoning(tx, sessie.tenantId, woningId);
+    const b = await leesIntakeBron(tx, sessie.tenantId, bronId);
+    if (!dossier || !b || b.dossierId !== dossier.id || !b.blobPad || b.verwerkstatus === "verwijderd") return null;
+    const meta = (await intakeBronnen(tx, sessie.tenantId, dossier.id)).find((x) => x.id === bronId);
+    return { type: b.type, blobPad: b.blobPad, bestandsnaam: meta?.bestandsnaam ?? null };
+  });
+  const clients = azure();
+  if (!bron || !clients) return null;
+  const inhoud = await clients.blob.getContainerClient("intake").getBlobClient(bron.blobPad).downloadToBuffer();
+  const inhoudstype = bron.type === "plaud_transcript" ? "text/plain; charset=utf-8" : "application/pdf";
+  return { type: bron.type, bestandsnaam: bron.bestandsnaam, inhoudstype, inhoud };
+}
+
+/** Anker van een tijdstempel in de transcriptweergave, bijv. "00:01:05" → "t-00-01-05". */
+export const tijdAnker = (tijdstempel: string) => `t-${tijdstempel.replace(/[^0-9]+/g, "-")}`;
 
 /** Zet een bron in de wachtrij voor verwerking (stap A7). Het bericht bevat alleen id's. */
 export async function meldIntakeBron(bericht: { tenantId: string; dossierId: string; bronId: string }): Promise<void> {
