@@ -194,8 +194,9 @@ export async function voegTekstversieToe(
   gebruikerId: string | null,
 ): Promise<string> {
   const { rows } = await tx.query(
-    `insert into intake_woningtekst_versie (tenant_id, woningtekst_id, bron, profiel_id, inhoud, tekst, feiten, controles, model, prompt_versie, prompt_hash, aangemaakt_door)
-     values ($1, $2, $3, $4, $5::jsonb, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12) returning id`,
+    // clock_timestamp() in plaats van de standaard now(): twee versies in één transactie houden zo hun volgorde.
+    `insert into intake_woningtekst_versie (tenant_id, woningtekst_id, bron, profiel_id, inhoud, tekst, feiten, controles, model, prompt_versie, prompt_hash, aangemaakt_door, aangemaakt_op)
+     values ($1, $2, $3, $4, $5::jsonb, $6, $7::jsonb, $8::jsonb, $9, $10, $11, $12, clock_timestamp()) returning id`,
     [tenantId, woningtekstId, v.bron, v.profielId, JSON.stringify(v.inhoud), v.tekst, v.feiten === undefined ? null : JSON.stringify(v.feiten), JSON.stringify(v.controles), v.model, v.promptVersie, v.promptHash, gebruikerId],
   );
   await tx.query("update intake_woningtekst set status = 'geschreven', fout = null, gewijzigd_op = now() where tenant_id = $1 and id = $2", [tenantId, woningtekstId]);

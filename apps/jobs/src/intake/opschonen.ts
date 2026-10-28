@@ -20,7 +20,7 @@ export async function schoonIntakeOp(db: Db, tenantId: string, vandaag: string, 
         console.log(`intake: dossier ${d.id} verwijderd (woning 30 dagen van het bord zonder verkoop); ${bestanden} bestanden`);
       } else {
         const t = await schoonIntakeDossierOp(tx, tenantId, d.id);
-        console.log(`intake: dossier ${d.id} opgeschoond na verkoop; ${bestanden} bestanden, ${t.velden} velden, ${t.citaten} citaten, ${t.bronnen} bronnen`);
+        console.log(`intake: dossier ${d.id} opgeschoond na verkoop; ${bestanden} bestanden, ${t.velden} velden, ${t.citaten} citaten, ${t.bronnen} bronnen, ${t.teksten} niet-goedgekeurde tekst(en)`);
       }
     });
     telling[actie === "verwijderen" ? "verwijderd" : "opgeschoond"] += 1;
