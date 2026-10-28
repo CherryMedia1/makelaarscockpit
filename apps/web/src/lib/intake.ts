@@ -108,3 +108,15 @@ export async function meldIntakeBron(bericht: { tenantId: string; dossierId: str
     await afzender.close();
   }
 }
+
+/** Zet een schrijfopdracht voor een woningtekst in de wachtrij (ADR-016). Het bericht bevat alleen id's en eventueel een sectiesleutel. */
+export async function meldWoningtekst(bericht: { tenantId: string; woningtekstId: string; sectie: string | null }): Promise<void> {
+  const clients = azure();
+  if (!clients) throw new Error("wachtrij niet ingesteld");
+  const afzender = clients.bus.createSender("intake-tekst");
+  try {
+    await afzender.sendMessages({ body: bericht, messageId: crypto.randomUUID(), contentType: "application/json" });
+  } finally {
+    await afzender.close();
+  }
+}

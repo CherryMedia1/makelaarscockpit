@@ -69,8 +69,8 @@ Het C&R-profiel (versie 1) maak ik op basis van de opdracht en de voorbeeldtekst
 | B2 | Database ✅ 2026-10-27 | Migratie 0012 en queries in `packages/db`, integratietest | B1 |
 | B3 | Tekstlogica ✅ 2026-10-27 | Feiten, prompt, outputschema, renderen met vaste blokken (`packages/ai`); controles (`packages/domain`). **Tests eerst.** | B1 |
 | B4 | Job en infra ✅ 2026-10-27 | Command `schrijf-woningtekst` in `apps/jobs`, queue `intake-tekst`, deployment `tekst`, event-job; bronnencontrole; integratietest met opgenomen modelantwoord | B2, B3 |
-| B5 | Portaal: tekst | Steekwoorden, feitenblok, schrijven met status, bewerken per sectie, opnieuw (geheel of sectie), goedkeuren, kopiëren en .txt | B4 |
-| B6 | Portaal: profielbeheer | Kantoorbeheerder: profiel bekijken en bewerken (nieuwe versie), voorbeeldteksten toevoegen en verwijderen. Daarna voert Tim het C&R-profiel in | B2 |
+| B5 | Portaal: tekst ✅ 2026-10-28 | Steekwoorden, feitenblok, schrijven met status, bewerken per sectie, opnieuw (geheel of sectie), goedkeuren, kopiëren en .txt | B4 |
+| B6 | Portaal: profielbeheer ✅ 2026-10-28 | Kantoorbeheerder: profiel bekijken en bewerken (nieuwe versie), voorbeeldteksten toevoegen en verwijderen. Daarna voert Tim het C&R-profiel in | B2 |
 | B7 | Opschonen | ADR-015 aanvullen: nooit goedgekeurde teksten weg na verkoop | B2 |
 | B8 | Acceptatie | Drie echte woningen van C&R naast de tekst van Wilma; de backoffice beoordeelt of het "als C&R klinkt" | B5, B6 |
 
@@ -84,6 +84,8 @@ Het C&R-profiel (versie 1) maak ik op basis van de opdracht en de voorbeeldtekst
 - CI draait altijd met een nagebootste modelaanroep.
 
 ## 8. Open punten
+
+- Foutmeldingen van de schemacontrole bij het opslaan van een profiel zijn nog Engels en technisch ("must have required property"); vertalen als het profielbeheer vaker gebruikt wordt.
 
 - C&R: vrije koppen bij extra secties en de omgevingssectie gewenst? (voorlopig ja)
 - C&R: voorbeeldtekst 01 (Glymesstraat 21) ontbreekt nog; er zijn er drie aangeleverd.

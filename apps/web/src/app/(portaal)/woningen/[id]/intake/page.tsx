@@ -119,6 +119,12 @@ export default async function Intake({ params, searchParams }: { params: Promise
             </Link>
           </Kaart>
 
+          <Kaart titel="Woningtekst" toelichting="Een verkooptekst in de stijl van het kantoor, uit de bevestigde velden en jouw steekwoorden.">
+            <Link href={`/woningen/${woning.id}/intake/tekst`} className={knopKlassen("secundair")}>
+              Naar de woningtekst
+            </Link>
+          </Kaart>
+
           <Kaart titel="Bronnen">
             {bronnen.length === 0 ? (
               <p className="text-body-sm text-text-muted">Nog geen bestanden.</p>
