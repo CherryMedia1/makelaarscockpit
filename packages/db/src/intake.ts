@@ -265,9 +265,10 @@ export async function intakeDossiersVoorOpschonen(tx: Tx, tenantId: string): Pro
 
 /**
  * Opschonen na verkoop (ADR-015): open en afgewezen waarden en de groep planning weg, citaten uit het bewijs, bronnen
- * zonder bestand. Het bevestigde woningprofiel en het verbruik blijven. De bestanden zelf verwijdert de aanroeper.
+ * zonder bestand, en een woningtekst die nooit is goedgekeurd (ADR-016). Het bevestigde woningprofiel, een goedgekeurde
+ * tekst met zijn versies en het verbruik blijven. De bestanden zelf verwijdert de aanroeper.
  */
-export async function schoonIntakeDossierOp(tx: Tx, tenantId: string, dossierId: string): Promise<{ velden: number; citaten: number; bronnen: number }> {
+export async function schoonIntakeDossierOp(tx: Tx, tenantId: string, dossierId: string): Promise<{ velden: number; citaten: number; bronnen: number; teksten: number }> {
   const velden = await tx.query(
     `delete from intake_veld where tenant_id = $1 and dossier_id = $2 and (status <> 'bevestigd' or pad like 'planning.%')`,
     [tenantId, dossierId],
@@ -282,11 +283,13 @@ export async function schoonIntakeDossierOp(tx: Tx, tenantId: string, dossierId:
       where tenant_id = $1 and dossier_id = $2 and verwerkstatus <> 'verwijderd'`,
     [tenantId, dossierId],
   );
+  // De versies gaan mee (on delete cascade).
+  const teksten = await tx.query("delete from intake_woningtekst where tenant_id = $1 and dossier_id = $2 and goedgekeurde_versie_id is null", [tenantId, dossierId]);
   await tx.query("update intake_dossier set status = 'opgeschoond' where tenant_id = $1 and id = $2", [tenantId, dossierId]);
-  return { velden: velden.rowCount ?? 0, citaten: citaten.rowCount ?? 0, bronnen: bronnen.rowCount ?? 0 };
+  return { velden: velden.rowCount ?? 0, citaten: citaten.rowCount ?? 0, bronnen: bronnen.rowCount ?? 0, teksten: teksten.rowCount ?? 0 };
 }
 
-/** Verwijdert een dossier met bronnen, velden en verbruik (ADR-015: ingetrokken woning). De bestanden verwijdert de aanroeper. */
+/** Verwijdert een dossier met bronnen, velden, woningtekst en verbruik (ADR-015: ingetrokken woning). De bestanden verwijdert de aanroeper. */
 export async function verwijderIntakeDossier(tx: Tx, tenantId: string, dossierId: string): Promise<void> {
   await tx.query("delete from intake_dossier where tenant_id = $1 and id = $2", [tenantId, dossierId]);
 }

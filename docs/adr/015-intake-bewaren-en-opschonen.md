@@ -22,6 +22,7 @@ Besluiten van Tim (2026-10-26):
 6. **Uitvoering:** de beslisregel (welk dossier wanneer, wat weg moet) staat in `packages/domain` met tests. De sync-job `sync-realworks` voert het opschonen uit na het bijwerken van het bord, en logt alleen id's en aantallen.
 ## Gevolgen
 - Uitvoering (2026-10-27): migratie 0011 voegt `woning.niet_zichtbaar_sinds` toe, die de sync bijhoudt. Een verkochte woning die van het bord verdwijnt zonder bekende transportdatum telt ook als verkocht (Realworks archiveert na de overdracht). Het opgeschoonde profiel is in het portaal alleen nog te lezen.
+- Aanvulling (ADR-016, 2026-10-28): na verkoop blijft een goedgekeurde woningtekst met al zijn versies bewaard; een tekst die nooit is goedgekeurd wordt met zijn versies verwijderd. Bij een ingetrokken woning gaat de tekst mee met het dossier.
 - Na opschonen zijn bronlinks in de review niet meer te openen; de UI toont dan "bron verwijderd na verkoop".
 - `verkoopargumenten` blijven bewaard als deel van het profiel; het zijn woningkenmerken in de woorden van de verkoper, zonder herleidbare persoonsgegevens behalve via het adres van de woning.
 - Het bewaarde profiel en de teksten zijn bruikbaar voor de evaluatieset van fase B, maar blijven gegevens van het kantoor: ze staan niet in de repo.

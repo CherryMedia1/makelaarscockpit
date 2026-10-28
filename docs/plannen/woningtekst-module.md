@@ -71,7 +71,7 @@ Het C&R-profiel (versie 1) maak ik op basis van de opdracht en de voorbeeldtekst
 | B4 | Job en infra ✅ 2026-10-27 | Command `schrijf-woningtekst` in `apps/jobs`, queue `intake-tekst`, deployment `tekst`, event-job; bronnencontrole; integratietest met opgenomen modelantwoord | B2, B3 |
 | B5 | Portaal: tekst ✅ 2026-10-28 | Steekwoorden, feitenblok, schrijven met status, bewerken per sectie, opnieuw (geheel of sectie), goedkeuren, kopiëren en .txt | B4 |
 | B6 | Portaal: profielbeheer ✅ 2026-10-28 | Kantoorbeheerder: profiel bekijken en bewerken (nieuwe versie), voorbeeldteksten toevoegen en verwijderen. Daarna voert Tim het C&R-profiel in | B2 |
-| B7 | Opschonen | ADR-015 aanvullen: nooit goedgekeurde teksten weg na verkoop | B2 |
+| B7 | Opschonen ✅ 2026-10-28 | ADR-015 aanvullen: nooit goedgekeurde teksten weg na verkoop | B2 |
 | B8 | Acceptatie | Drie echte woningen van C&R naast de tekst van Wilma; de backoffice beoordeelt of het "als C&R klinkt" | B5, B6 |
 
 **Klaar als:** de backoffice van C&R keurt 8 van de 10 teksten goed met alleen kleine correcties, en de bronnencontrole vindt geen ongedekte feiten in goedgekeurde teksten.
