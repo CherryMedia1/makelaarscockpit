@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, Settings } from "lucide-react";
+import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, PenLine, Settings } from "lucide-react";
 
 const items = [
   { href: "/", label: "Overzicht", icoon: LayoutDashboard },
@@ -10,13 +10,14 @@ const items = [
   { href: "/waardebepalingen", label: "Waardebepalingen", icoon: ClipboardCheck },
   { href: "/woningen", label: "Woningen in verkoop", icoon: Home },
   { href: "/instellingen/doelen", label: "Doelstellingen", icoon: Settings, alleenBeheerder: true },
+  { href: "/instellingen/schrijfprofiel", label: "Schrijfprofiel", icoon: PenLine, alleenBeheerder: true, alleenIntake: true },
 ];
 
-export function Navigatie({ beheerder }: { beheerder: boolean }) {
+export function Navigatie({ beheerder, intake }: { beheerder: boolean; intake: boolean }) {
   const pad = usePathname();
   return (
     <nav aria-label="Hoofdmenu" className="flex gap-1 overflow-x-auto px-3 py-2 md:flex-col md:overflow-visible md:px-3 md:py-4">
-      {items.filter((item) => beheerder || !item.alleenBeheerder).map(({ href, label, icoon: Icoon }) => {
+      {items.filter((item) => (beheerder || !item.alleenBeheerder) && (intake || !item.alleenIntake)).map(({ href, label, icoon: Icoon }) => {
         const actief = href === "/" ? pad === "/" : pad.startsWith(href);
         return (
           <Link
