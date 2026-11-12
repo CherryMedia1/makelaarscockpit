@@ -26,17 +26,14 @@ Toets elk voorstel hieraan. Raakt een wijziging een van deze regels, zeg dat dan
 9. UI volgt `docs/huisstijl/BRAND.md`, alleen semantische tokens (`--mc-color-*` of de Tailwind-klassen daarop), geen losse hexwaarden.
 10. Werkwijze: vanuit een GitHub-issue, eerst een plan en akkoord, dan bouwen. Conventional commits. Ontwerpbeslissingen worden een ADR (`docs/adr`, sjabloon 000).
 
-## Werkwijze
-- Werk vanuit een GitHub-issue. Maak eerst een plan, wacht op akkoord, implementeer dan.
-- Commit-berichten: conventional commits (feat:, fix:, chore:, docs:).
-- Beslissingen die het ontwerp raken → nieuwe ADR in docs/adr (sjabloon: docs/adr/000-template.md).
+## Uitwerking van regel 10
+- Prefixen voor commit-berichten: feat:, fix:, chore:, docs:.
 
 ## Commando's
 npm install · npm run lint · npm run typecheck · npm run test
 Infra dev: az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
 Dev zuinig / aan: infra/scripts/dev-uit.sh · infra/scripts/dev-aan.sh (NAT Gateway via natGatewayEnabled in dev.bicepparam)
 
-## Huisstijl
-Volg altijd docs/huisstijl/BRAND.md voor kleuren, typografie, componenten en tone of voice.
-Gebruik uitsluitend de semantische tokens (--mc-color-*, of de Tailwind-klassen daarop), nooit losse hexwaarden.
-Na een wijziging in docs/huisstijl: npm run brand:sync.
+## Uitwerking van regel 9
+- BRAND.md geldt voor kleuren, typografie, componenten en tone of voice.
+- Na een wijziging in docs/huisstijl: npm run brand:sync.
