@@ -85,7 +85,7 @@ Negentien van de tweeëntwintig tabellen met klantgegevens hebben FORCE: daar ge
 - **`gebruiker` en `inlog_token`** hebben `tenant_id` maar geen FORCE. Dat is bewust (migratie 0005): bij het inloggen is de tenant nog niet bekend. De functies in [packages/db/src/toegang.ts](../packages/db/src/toegang.ts) draaien als eigenaar, buiten `metTenant`. Voor deze twee tabellen is RLS dus geen vangnet; de isolatie hangt alleen aan de filters in de code. De controle in [db/migrate.mjs:91](../db/migrate.mjs#L91) zondert ze expliciet uit.
 - **`tenant`** heeft geen `tenant_id` en sinds migratie 0003 geen FORCE, zodat de platformcode een tenant op sleutel kan opzoeken.
 
-Dit wijkt af van harde regel 1 zoals die nu luidt. Dat is vastgelegd in issue #40; er is geen migratie geschreven.
+Dit wijkt af van harde regel 1 (RLS is het vangnet). Dat is vastgelegd in issue #40; er is geen migratie geschreven.
 
 ### Blob-containers (`stcockpitdevneu`)
 
@@ -166,7 +166,7 @@ Onderzocht: de werkmap, alle branches (lokaal en op GitHub) en de volledige hist
 
 Conclusie: er staat geen klantdata in de repo en die heeft er niet gestaan. Wel openbaar, en geen klantdata: de kantoornaam en Realworks-codes van C&R in migratie 0002, de Microsoft-organisatie in 0005, en het beheerdersadres en object-id in `dev.bicepparam`. De regels noemen de codes "geen geheimen"; of je het beheerdersadres in een publieke repo wilt, is aan jou.
 
-Opmerking: het issue verwijst naar "harde regel 8". CLAUDE.md heeft zeven harde regels; ik ben uitgegaan van regel 2 (geen persoonsgegevens in logs) en de afspraak in `.gitignore` dat klantbestanden niet in git komen.
+Toetssteen is harde regel 8 (nooit echte klantdata in de repo). Bij het opstellen van deze inventarisatie had CLAUDE.md nog zeven regels; de nummering volgt nu de tien regels uit #44.
 
 ## 6. Wie kan bij de data
 
