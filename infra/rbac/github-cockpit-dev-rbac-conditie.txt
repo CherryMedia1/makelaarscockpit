@@ -1,0 +1,23 @@
+(
+ (
+  !(ActionMatches{'Microsoft.Authorization/roleAssignments/write'})
+ )
+ OR
+ (
+  @Request[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {b7e6dc6d-f1e8-4753-8033-0f276bb0955b, 974c5e8b-45b9-4653-ba55-5f855dd0fb88, 0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3, 4633458b-17de-408a-b874-0445c86b69e6, b86a8fe4-44ce-4948-aee5-eccb2c155cd7, 090c5cfd-751d-490a-894a-3ce6f1109419, 09976791-48a7-449e-bb21-39d1a415f350, a97b65f3-24c7-4388-baec-2e87135dc908}
+  AND
+  @Request[Microsoft.Authorization/roleAssignments:PrincipalId] ForAnyOfAnyValues:GuidEquals {33f280f7-e015-46a2-904d-cb1f20f34b61, 5ea0a0fb-3469-4a13-b138-fff365379ce7}
+ )
+)
+AND
+(
+ (
+  !(ActionMatches{'Microsoft.Authorization/roleAssignments/delete'})
+ )
+ OR
+ (
+  @Resource[Microsoft.Authorization/roleAssignments:RoleDefinitionId] ForAnyOfAnyValues:GuidEquals {b7e6dc6d-f1e8-4753-8033-0f276bb0955b, 974c5e8b-45b9-4653-ba55-5f855dd0fb88, 0a9a7e1f-b9d0-4cc4-a60d-0319b160aaa3, 4633458b-17de-408a-b874-0445c86b69e6, b86a8fe4-44ce-4948-aee5-eccb2c155cd7, 090c5cfd-751d-490a-894a-3ce6f1109419, 09976791-48a7-449e-bb21-39d1a415f350, a97b65f3-24c7-4388-baec-2e87135dc908}
+  AND
+  @Resource[Microsoft.Authorization/roleAssignments:PrincipalId] ForAnyOfAnyValues:GuidEquals {33f280f7-e015-46a2-904d-cb1f20f34b61, 5ea0a0fb-3469-4a13-b138-fff365379ce7}
+ )
+)
