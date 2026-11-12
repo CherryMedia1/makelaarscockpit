@@ -12,25 +12,28 @@ PostgreSQL met row-level security. Azure: Container Apps, Functions, Service Bus
 Infra in Bicep (infra/bicep). CI/CD via GitHub Actions.
 
 ## Harde regels
-- Elke databasetabel heeft tenant_id. Elke query filtert op tenant_id. RLS is het vangnet, niet de eerste verdediging.
-- Nooit persoonsgegevens in logs: log id's, geen namen, e-mails, telefoonnummers of adressen.
-- Secrets alleen uit Key Vault via Managed Identity. Nooit secrets in code, .env in git, of GitHub Secrets voor runtime.
-- Realworks-calls alleen via packages/realworks. Header: `Authorization: rwauth {token}`.
-- Webhook-endpoints antwoorden binnen 1 seconde met 202 en doen verder niets; verwerking gaat via Service Bus.
-- Voer nooit `az deployment` of `az ... delete` uit richting prod. Dev mag.
-- Schrijf tests voor domeinlogica (packages/domain) vóór de implementatie.
 
-## Werkwijze
-- Werk vanuit een GitHub-issue. Maak eerst een plan, wacht op akkoord, implementeer dan.
-- Commit-berichten: conventional commits (feat:, fix:, chore:, docs:).
-- Beslissingen die het ontwerp raken → nieuwe ADR in docs/adr (sjabloon: docs/adr/000-template.md).
+Toets elk voorstel hieraan. Raakt een wijziging een van deze regels, zeg dat dan expliciet in het plan.
+
+1. Elke tabel heeft `tenant_id`; elke query filtert zelf op `tenant_id`. RLS is het vangnet, niet de eerste verdediging. De tenant komt uit de sessie of het bericht, nooit uit URL of invoer.
+2. Nooit persoonsgegevens in logs: alleen id's en aantallen, geen namen, e-mail, telefoon, adressen of transcripttekst.
+3. Secrets alleen uit Key Vault via Managed Identity. Niet in code, niet in `.env` in git, niet als GitHub Secret voor runtime.
+4. Realworks alleen via `packages/realworks`, header `Authorization: rwauth {token}`. Geen scraping of browserautomatisering. Schrijven alleen wat ADR-005 toestaat.
+5. Webhooks antwoorden binnen 1 seconde met 202 en doen verder niets; verwerking via Service Bus.
+6. Nooit `az deployment` of `az ... delete` richting prod. Dev mag.
+7. Domeinlogica in `packages/domain`, tests vóór de implementatie.
+8. Intake: mens in de lus (niets gaat naar buiten zonder goedkeuring in de UI), tekst alleen uit bevestigde velden, elk geëxtraheerd veld heeft bewijs, de module staat per tenant aan of uit (`tenant_module`), opschonen volgens ADR-015, nooit echte klantdata in de repo.
+9. UI volgt `docs/huisstijl/BRAND.md`, alleen semantische tokens (`--mc-color-*` of de Tailwind-klassen daarop), geen losse hexwaarden.
+10. Werkwijze: vanuit een GitHub-issue, eerst een plan en akkoord, dan bouwen. Conventional commits. Ontwerpbeslissingen worden een ADR (`docs/adr`, sjabloon 000).
+
+## Uitwerking van regel 10
+- Prefixen voor commit-berichten: feat:, fix:, chore:, docs:.
 
 ## Commando's
 npm install · npm run lint · npm run typecheck · npm run test
 Infra dev: az deployment group create -g rg-cockpit-dev-neu -f infra/bicep/main.bicep -p infra/bicep/dev.bicepparam
 Dev zuinig / aan: infra/scripts/dev-uit.sh · infra/scripts/dev-aan.sh (NAT Gateway via natGatewayEnabled in dev.bicepparam)
 
-## Huisstijl
-Volg altijd docs/huisstijl/BRAND.md voor kleuren, typografie, componenten en tone of voice.
-Gebruik uitsluitend de semantische tokens (--mc-color-*, of de Tailwind-klassen daarop), nooit losse hexwaarden.
-Na een wijziging in docs/huisstijl: npm run brand:sync.
+## Uitwerking van regel 9
+- BRAND.md geldt voor kleuren, typografie, componenten en tone of voice.
+- Na een wijziging in docs/huisstijl: npm run brand:sync.
