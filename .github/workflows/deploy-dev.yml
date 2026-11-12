@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['infra/**']
+    paths: ['infra/**', '!infra/rbac/**']
 permissions:
   id-token: write
   contents: read
