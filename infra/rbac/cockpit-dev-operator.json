@@ -1,0 +1,22 @@
+{
+  "Name": "cockpit-dev-operator",
+  "IsCustom": true,
+  "Description": "Dev-service principal van Claude Code (ADR-017): lezen, revisies van container apps (de)activeren en herstarten, Postgres starten en stoppen. Geen schrijfrechten, sleutels, secrets, exec, jobs starten of logs.",
+  "Actions": [
+    "*/read",
+    "Microsoft.App/containerApps/revisions/activate/action",
+    "Microsoft.App/containerApps/revisions/deactivate/action",
+    "Microsoft.App/containerApps/revisions/restart/action",
+    "Microsoft.DBforPostgreSQL/flexibleServers/start/action",
+    "Microsoft.DBforPostgreSQL/flexibleServers/stop/action"
+  ],
+  "NotActions": [
+    "Microsoft.Insights/logs/*/read",
+    "Microsoft.Insights/components/query/read"
+  ],
+  "DataActions": [],
+  "NotDataActions": [],
+  "AssignableScopes": [
+    "/subscriptions/3cd2db41-5e0d-4d87-b029-df0fdefabc3d/resourceGroups/rg-cockpit-dev-neu"
+  ]
+}
