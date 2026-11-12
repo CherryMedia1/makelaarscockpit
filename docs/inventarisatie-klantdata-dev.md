@@ -64,7 +64,28 @@ Toelichting:
 
 De gevoeligste velden staan in `intake_veld`. Het [woningprofiel-schema](../packages/ai/src/intake/woningprofiel.schema.json) bevat naast woningkenmerken de groep `planning` (beschikbaarheid van de verkoper, sleutelregeling, huisdieren, voorkeur passeerdatum), de groepen `gebreken` en `vve`, `verkoopargumenten` in de woorden van de verkoper en een vrij veld `opmerkingen`. Elk veld kan in `bewijs` een citaat uit het transcript hebben. Transcripten worden niet gefilterd (ADR-015), dus alles wat in een gesprek gezegd is, kan in een citaat terechtkomen.
 
-Alle tabellen behalve `tenant` en `schema_migraties` hebben `tenant_id` en RLS. Vier tabellen wijken af van het gewone beleid: `tenant`, `gebruiker` en `inlog_token` hebben RLS zonder FORCE, zodat de eigenaar ze bij het inloggen kan lezen. Dat is bewust zo gemaakt (migraties 0003 en 0005).
+### FORCE ROW LEVEL SECURITY per tabel
+
+De applicatie logt in als `id-cockpit-dev-neu`, de eigenaar van de tabellen. Zonder FORCE geldt RLS niet voor de eigenaar. Vastgesteld door alle twaalf migraties op een lokale Postgres 16 te draaien en de catalogus (`pg_class`) uit te lezen. De stand in dev zelf bevestig je met blok 1b van `inventaris-dev.sql`.
+
+| Tabel | RLS | FORCE | Beleid | Rechten `cockpit_app` |
+|---|---|---|---|---|
+| `medewerker`, `object`, `verkoop`, `verkoop_verdeling`, `kostenregel`, `doelstelling` | aan | **ja** | `tenant_isolatie` | lezen en schrijven |
+| `waardebepaling`, `agendapunt`, `woning`, `woning_stap` | aan | **ja** | `tenant_isolatie` | lezen en schrijven |
+| `intake_dossier`, `intake_bron`, `intake_veld`, `intake_verbruik` | aan | **ja** | `tenant_isolatie` | lezen en schrijven |
+| `intake_schrijfprofiel`, `intake_schrijfvoorbeeld`, `intake_woningtekst`, `intake_woningtekst_versie` | aan | **ja** | `tenant_isolatie` | lezen en schrijven |
+| `tenant_module` | aan | **ja** | `tenant_isolatie` | alleen lezen |
+| `gebruiker` | aan | **nee** | `tenant_isolatie` | lezen, toevoegen, wijzigen |
+| `inlog_token` | aan | **nee** | geen | geen |
+| `tenant` | aan | **nee** | `eigen_tenant` (alleen lezen) | alleen lezen |
+| `schema_migraties` | uit | nee | geen | geen (heeft geen `tenant_id`) |
+
+Negentien van de tweeëntwintig tabellen met klantgegevens hebben FORCE: daar geldt RLS ook als de applicatie vergeet naar `cockpit_app` te wisselen. Bij drie tabellen ontbreekt FORCE:
+
+- **`gebruiker` en `inlog_token`** hebben `tenant_id` maar geen FORCE. Dat is bewust (migratie 0005): bij het inloggen is de tenant nog niet bekend. De functies in [packages/db/src/toegang.ts](../packages/db/src/toegang.ts) draaien als eigenaar, buiten `metTenant`. Voor deze twee tabellen is RLS dus geen vangnet; de isolatie hangt alleen aan de filters in de code. De controle in [db/migrate.mjs:91](../db/migrate.mjs#L91) zondert ze expliciet uit.
+- **`tenant`** heeft geen `tenant_id` en sinds migratie 0003 geen FORCE, zodat de platformcode een tenant op sleutel kan opzoeken.
+
+Dit wijkt af van harde regel 1 zoals die nu luidt. Dat is vastgelegd in issue #40; er is geen migratie geschreven.
 
 ### Blob-containers (`stcockpitdevneu`)
 
@@ -174,3 +195,15 @@ In te vullen door Tim na het draaien van `inventaris-dev.sql` en `inventaris-dev
 - De inhoud van de ruwe Realworks-antwoorden, dus welke persoonsgegevens `raw-realworks` precies bevat.
 - Of er rijen of bestanden zijn die buiten de beschreven routes zijn ontstaan, bijvoorbeeld handmatig via de toolbox.
 - Logs: de rol sluit het lezen daarvan uit.
+
+## Vervolgissues
+
+| Issue | Onderwerp |
+|---|---|
+| #40 | RLS zonder FORCE op `gebruiker`, `inlog_token` en `tenant` |
+| #41 | GitHub Actions-service principal: User Access Administrator vervangen (hoge prioriteit) |
+| #42 | Lifecycle-regels voor `raw-realworks` en `import` |
+| #43 | Melding bij mislukte sync- of opschoonrun |
+| #44 | CLAUDE.md bijwerken naar de tien harde regels |
+| #37 | Storage: sleutels uitzetten (bestond al) |
+

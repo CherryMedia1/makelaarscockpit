@@ -64,6 +64,19 @@ select c.relname as tabel,
  order by 1;
 
 \echo
+\echo == 1b. RLS per tabel: aan, FORCE (geldt ook voor de eigenaar), aantal beleidsregels, eigenaar is de ingelogde rol ==
+\echo Verwacht zonder FORCE: tenant, gebruiker, inlog_token (bewust, migraties 0003 en 0005) en schema_migraties (geen RLS).
+select c.relname as tabel,
+       c.relrowsecurity as rls,
+       c.relforcerowsecurity as rls_force,
+       (select count(*) from pg_policy p where p.polrelid = c.oid) as beleid,
+       pg_get_userbyid(c.relowner) = current_user as eigenaar_is_deze_rol
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+ where n.nspname = 'public' and c.relkind in ('r', 'p')
+ order by c.relforcerowsecurity, c.relname;
+
+\echo
 \echo == 2. Tenants (de tabel zelf heeft geen tenant_id; het id is de tenant) ==
 select 'tenant' as tabel, id as tenant_id, 1 as aantal, aangemaakt_op as oudste, aangemaakt_op as nieuwste
   from tenant
