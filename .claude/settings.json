@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(az deployment:*)",
+      "Bash(az * delete *)",
+      "Bash(az * delete)",
+      "Bash(*dev-aan.sh*)",
+      "Bash(*dev-uit.sh*)"
+    ]
+  }
+}
