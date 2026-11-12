@@ -167,3 +167,7 @@ input/*
 
 # Echte woningteksten en intakes van klanten (schrijfprofielen, ADR-016): nooit in deze publieke repo
 docs/plannen/Woningteksten/
+
+# Certificaat van de dev-service principal in de Codespace (ADR-017): nooit committen
+.azure-sp/
+*.pem

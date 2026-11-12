@@ -7,6 +7,11 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": { "moby": false }
   },
   "postCreateCommand": "az bicep install && sudo apt-get update && sudo apt-get install -y postgresql-client && npm install",
+  "containerEnv": {
+    "AZURE_SP_APP_ID": "e05a8c62-4ab0-4541-8c41-5ed1a39d5641",
+    "AZURE_SP_TENANT_ID": "d7d84db3-a6b9-492e-b12c-a4e3e7bf3d27"
+  },
+  "postStartCommand": "bash .devcontainer/azure-login.sh",
   "customizations": {
     "vscode": {
       "extensions": [
