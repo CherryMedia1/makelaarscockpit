@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { leesBezichtigingen, vervangBezichtigingen } from "./bezichtigers";
 import {
-  bewaarLead, leesLeadKaart, leesLeadStanden, leesPijplijnFases, verwijderLead, verwijderPijplijnFase, voegPijplijnFaseToe, wijzigPijplijnFase, zetPijplijnFaseActief,
+  bewaarLead, leesLeadKaart, leesLeadStanden, leesPijplijnFases, verwijderLead, zetLeadFase, verwijderPijplijnFase, voegPijplijnFaseToe, wijzigPijplijnFase, zetPijplijnFaseActief,
   zetPijplijnVolgorde,
 } from "./pijplijn";
 import { maakDb, metTenant, type Db } from "./verbinding";
@@ -91,7 +91,18 @@ describe.skipIf(!process.env.DB_INTEGRATIE)("pijplijnfases in de database", () =
       const kaart = await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger));
       expect(kaart!.lead).toMatchObject({ faseId: verloren, eigenaarId: null, notitie: null });
       expect(kaart!.historie.map((h) => [h.van, h.naar, h.door])).toEqual([["Eerste", "Verloren", "Test Medewerker"], [null, "Eerste", "Test Medewerker"]]);
-      expect(await metTenant(db, a, (tx) => leesLeadStanden(tx, a))).toEqual([{ bezichtigerId: bezichtiger, faseId: verloren, fase: "Verloren", soort: "verloren", eigenaar: null }]);
+      expect(await metTenant(db, a, (tx) => leesLeadStanden(tx, a))).toEqual([{ bezichtigerId: bezichtiger, faseId: verloren, fase: "Verloren", soort: "verloren", eigenaar: null, naam: null, naamGezocht: false }]);
+    });
+
+    it("zet een lead vanaf het bord in een andere fase en bewaart eigenaar en notitie", async () => {
+      await metTenant(db, a, (tx) => bewaarLead(tx, a, bezichtiger, { faseId: verloren, eigenaarId: medewerker, notitie: "blijft staan" }, gebruiker));
+      expect(await metTenant(db, a, (tx) => zetLeadFase(tx, a, bezichtiger, eerste, gebruiker))).toMatchObject({ faseGewijzigd: true });
+      expect(await metTenant(db, a, (tx) => zetLeadFase(tx, a, bezichtiger, eerste, gebruiker))).toMatchObject({ faseGewijzigd: false });
+      expect(await metTenant(db, b, (tx) => zetLeadFase(tx, b, bezichtiger, eerste, gebruiker))).toBeNull();
+      const kaart = await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger));
+      expect(kaart!.lead).toMatchObject({ faseId: eerste, eigenaarId: medewerker, notitie: "blijft staan" });
+      expect(kaart!.historie).toHaveLength(3);
+      await metTenant(db, a, (tx) => zetLeadFase(tx, a, bezichtiger, verloren, gebruiker));
     });
 
     it("laat een ander kantoor de lead niet zien of wijzigen", async () => {

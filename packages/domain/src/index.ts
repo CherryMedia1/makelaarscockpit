@@ -15,3 +15,4 @@ export * from "./bezichtigers/bezichtigers";
 export * from "./bezichtigers/sync";
 export * from "./bezichtigers/pijplijn";
 export * from "./bezichtigers/lead";
+export * from "./bezichtigers/bord";

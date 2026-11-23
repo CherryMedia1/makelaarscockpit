@@ -51,13 +51,15 @@ export async function verwijderPijplijnFase(tx: Tx, tenantId: string, id: string
   return rowCount === 1 ? "verwijderd" : "onbekend";
 }
 
-export type LeadStand = { bezichtigerId: string; faseId: string; fase: string; soort: FaseSoort; eigenaar: string | null };
+export type LeadStand = { bezichtigerId: string; faseId: string; fase: string; soort: FaseSoort; eigenaar: string | null; naam: string | null; naamGezocht: boolean };
 
 /** Per bezichtiger met een lead: de fase en de eigenaar, voor het overzicht. */
 export async function leesLeadStanden(tx: Tx, tenantId: string): Promise<LeadStand[]> {
   const { rows } = await tx.query(
-    `select l.bezichtiger_id as "bezichtigerId", f.id as "faseId", f.naam as fase, f.soort, m.weergavenaam as eigenaar
+    `select l.bezichtiger_id as "bezichtigerId", f.id as "faseId", f.naam as fase, f.soort, m.weergavenaam as eigenaar,
+            b.naam, b.naam_opgehaald_op is not null as "naamGezocht"
        from lead l
+       join bezichtiger b on b.id = l.bezichtiger_id and b.tenant_id = l.tenant_id
        join pijplijn_fase f on f.id = l.fase_id and f.tenant_id = l.tenant_id
        left join medewerker m on m.id = l.eigenaar_medewerker_id and m.tenant_id = l.tenant_id
       where l.tenant_id = $1`,
@@ -130,6 +132,20 @@ export async function bewaarLead(tx: Tx, tenantId: string, bezichtigerId: string
     await tx.query("insert into lead_historie (tenant_id, lead_id, van_fase_id, naar_fase_id, door_gebruiker_id) values ($1, $2, $3, $4, $5)", [tenantId, leadId, vorigeFase, invoer.faseId, gebruikerId]);
   }
   return { leadId, faseGewijzigd };
+}
+
+/**
+ * Zet een bestaande lead in een andere fase, vanaf het bord; eigenaar en notitie blijven staan. Geeft null als de
+ * bezichtiger geen lead heeft bij deze tenant.
+ */
+export async function zetLeadFase(tx: Tx, tenantId: string, bezichtigerId: string, faseId: string, gebruikerId: string): Promise<{ leadId: string; faseGewijzigd: boolean } | null> {
+  const vorige = await tx.query("select id, fase_id from lead where tenant_id = $1 and bezichtiger_id = $2 for update", [tenantId, bezichtigerId]);
+  const lead = vorige.rows[0];
+  if (!lead) return null;
+  if (lead.fase_id === faseId) return { leadId: lead.id, faseGewijzigd: false };
+  await tx.query("update lead set fase_id = $3, gewijzigd_op = now() where tenant_id = $1 and id = $2", [tenantId, lead.id, faseId]);
+  await tx.query("insert into lead_historie (tenant_id, lead_id, van_fase_id, naar_fase_id, door_gebruiker_id) values ($1, $2, $3, $4, $5)", [tenantId, lead.id, lead.fase_id, faseId, gebruikerId]);
+  return { leadId: lead.id, faseGewijzigd: true };
 }
 
 /** Haalt de bezichtiger uit de pijplijn: de lead en zijn historie verdwijnen, de bezichtiger en zijn bezichtigingen blijven. */

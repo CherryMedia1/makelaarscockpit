@@ -9,6 +9,7 @@ import { Keuze } from "@/components/formulier";
 import { HorizontaalScroller } from "@/components/horizontaal-scroller";
 import { RijenKiezer } from "@/components/rijen-kiezer";
 import { aantal, datum } from "@/lib/format";
+import { LeadTabs } from "@/components/lead-tabs";
 import { haalLeadOverzicht, type LeadSync } from "@/lib/leads";
 import { leadsSynchroniseren } from "./acties";
 
@@ -111,7 +112,9 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
       <PaginaKop
         titel="Leads uit bezichtigingen"
         toelichting="Iedereen met een bezichtiging in de laatste zes maanden of een geplande bezichtiging, één regel per relatie. Dit overzicht is voor gebruik binnen het kantoor."
-      />
+      >
+        {d.fases.length > 0 && <LeadTabs actief="overzicht" />}
+      </PaginaKop>
 
       {syncMelding && (
         <Melding titel={syncMelding.titel} {...(syncMelding.soort ? { soort: syncMelding.soort } : {})}>
