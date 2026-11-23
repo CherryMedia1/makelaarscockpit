@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RealworksFout, haalAgendapunten, haalMedewerkers, haalRelatieNaam, haalWonenObjecten, naarAgendapunt, naarMedewerker, naarObject, naarRelatieNaam } from "./index";
+import { RealworksFout, haalAgendapunten, haalMedewerkers, haalRelatieContact, haalRelatieNaam, haalWonenObjecten, naarAgendapunt, naarMedewerker, naarObject, naarRelatieContact, naarRelatieNaam } from "./index";
 
 // Verzonnen antwoorden in de vorm van de echte API (zie examples/wonen-object-velden.md); geen echte gegevens.
 const wonenObject = (id: number, overdracht: Record<string, unknown> = {}) => ({
@@ -169,5 +169,43 @@ describe("haalRelatieNaam", () => {
     const poging = haalRelatieNaam({ token: async () => "geheim", fetch }, 123456, "935585");
     await expect(poging).rejects.toBeInstanceOf(RealworksFout);
     await expect(poging).rejects.toMatchObject({ status: 429, message: expect.not.stringContaining("123456") });
+  });
+});
+
+describe("naarRelatieContact", () => {
+  it("neemt het eerste e-mailadres, bij voorkeur een mobiel nummer en de website", () => {
+    const ruw = {
+      id: 7, achternaam: "Voorbeeld",
+      emailadressen: [{ email: "eerste@voorbeeld.test" }, { email: "tweede@voorbeeld.test" }],
+      telefoonnummers: [{ nummer: "0165000000", type: "Thuis" }, { nummer: "0600000000", type: "Mobiel" }],
+      overige: { homepage: "https://voorbeeld.test" },
+    };
+    expect(naarRelatieContact(ruw)).toEqual({ email: "eerste@voorbeeld.test", telefoon: "0600000000", website: "https://voorbeeld.test", links: { linkedin: null, facebook: null, instagram: null } });
+  });
+
+  it("vindt links naar social media ongeacht het veld waarin ze staan, en neemt niets anders over", () => {
+    const ruw = {
+      overige: { homepage: "https://www.linkedin.com/in/voorbeeld", notitie: "zie https://www.instagram.com/voorbeeld niet als losse link" },
+      social: [{ soort: "fb", url: "https://facebook.com/voorbeeld" }],
+      adresgegevens: { huisadres: { huisadresRegel1: "Proefstraat" } },
+    };
+    expect(naarRelatieContact(ruw)).toEqual({
+      email: null, telefoon: null, website: null,
+      links: { linkedin: "https://www.linkedin.com/in/voorbeeld", facebook: "https://facebook.com/voorbeeld", instagram: null },
+    });
+  });
+
+  it("werkt met een lege relatie en met alleen een vast nummer", () => {
+    expect(naarRelatieContact({})).toEqual({ email: null, telefoon: null, website: null, links: { linkedin: null, facebook: null, instagram: null } });
+    expect(naarRelatieContact({ telefoonnummers: [{ nummer: "0165000000", type: "Thuis" }] }).telefoon).toBe("0165000000");
+  });
+});
+
+describe("haalRelatieContact", () => {
+  it("haalt de contactgegevens van één relatie op, en meldt een relatie die niet meer bestaat", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(antwoord({ id: 7, emailadressen: [{ email: "t@voorbeeld.test" }] })).mockResolvedValueOnce(antwoord({}, 404));
+    expect(await haalRelatieContact({ token: async () => "geheim", fetch }, 7, "935585")).toMatchObject({ gevonden: true, contact: { email: "t@voorbeeld.test" } });
+    expect(fetch.mock.calls[0]![0]).toBe("https://api.realworks.nl/relaties/v1/7?bedrijfscode=935585");
+    expect(await haalRelatieContact({ token: async () => "geheim", fetch }, 8, "935585")).toEqual({ gevonden: false });
   });
 });

@@ -12,7 +12,7 @@ import {
 } from "@makelaarscockpit/domain";
 import { haalAgendapunten, haalMedewerkers, haalWonenObjecten, type RealworksOpties } from "@makelaarscockpit/realworks";
 import { omgeving, schrijfBlob, verwijderBlobsMetPrefix } from "./azure";
-import { bezichtigerNamenOphalen, realworksOpties } from "./bezichtigers";
+import { bezichtigerNamenOphalen, leadContactOphalen, realworksOpties } from "./bezichtigers";
 import { schoonIntakeOp } from "./intake/opschonen";
 
 export async function syncRealworks(): Promise<void> {
@@ -48,7 +48,10 @@ export async function syncRealworks(): Promise<void> {
     const leadsAan = await metTenant(db, tenant.id, (tx) => moduleAan(tx, tenant.id, "bezichtigers"));
     const medewerkerIds = new Set(medewerkers.map((m) => m.realworksId));
     await agendaSpiegelen(db, tenant.id, tenant.afdelingscode, opties, map, leadsAan ? medewerkerIds : null);
-    if (leadsAan) await bezichtigerNamenOphalen(db, tenant, opties);
+    if (leadsAan) {
+      await bezichtigerNamenOphalen(db, tenant, opties);
+      await leadContactOphalen(db, tenant, opties);
+    }
 
     // Na het bijwerken van het bord: intakedossiers opschonen na verkoop of verwijderen na intrekken (ADR-015).
     const intake = await schoonIntakeOp(db, tenant.id, vandaagInNederland(), (prefix) => verwijderBlobsMetPrefix("intake", prefix));

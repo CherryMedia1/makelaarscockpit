@@ -4,9 +4,10 @@
 // pijplijn halen. Elke medewerker van het kantoor mag dit; de tenant komt uit de sessie. Alleen id's in de log.
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { bewaarLead, leesLeadKaart, leesMedewerkerKeuzes, leesPijplijnFases, moduleAan, verwijderLead } from "@makelaarscockpit/db";
-import { valideerLeadInvoer } from "@makelaarscockpit/domain";
+import { bewaarLead, bewaarLeadLinks, leesLeadKaart, leesMedewerkerKeuzes, leesPijplijnFases, moduleAan, verwijderLead } from "@makelaarscockpit/db";
+import { valideerLeadInvoer, valideerLeadLinks } from "@makelaarscockpit/domain";
 import { metHuidigeTenant } from "@/lib/gegevens";
+import { meldLeadContact } from "@/lib/intake";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -27,10 +28,33 @@ export async function leadOpslaan(bezichtigerId: string, formData: FormData): Pr
     const lead = await bewaarLead(tx, sessie.tenantId, bezichtigerId, oordeel.waarde, sessie.gebruikerId);
     if (!lead) return "fout=onbekend";
     console.log(`lead ${lead.leadId} bijgewerkt door gebruiker ${sessie.gebruikerId}${lead.faseGewijzigd ? ` (fase ${oordeel.waarde.faseId})` : ""}`);
-    return "opgeslagen=1";
+    return lead.nieuw ? { nieuw: { tenantId: sessie.tenantId, leadId: lead.leadId } } : "opgeslagen=1";
   });
   revalidatePath("/leads");
-  redirect(`${pad}?${uitkomst}`);
+  if (typeof uitkomst === "string") redirect(`${pad}?${uitkomst}`);
+  // Een nieuwe lead: de job haalt de contactgegevens uit Realworks. Lukt het versturen niet, dan volgen ze bij de
+  // eerstvolgende synchronisatie; de lead zelf is al opgeslagen.
+  try {
+    await meldLeadContact(uitkomst.nieuw);
+  } catch (fout) {
+    console.error(`lead ${uitkomst.nieuw.leadId}: verzoek om contactgegevens niet verstuurd: ${fout instanceof Error ? fout.message : String(fout)}`);
+  }
+  redirect(`${pad}?opgeslagen=1`);
+}
+
+/** De links naar social media die een medewerker zelf invult. */
+export async function leadLinksOpslaan(bezichtigerId: string, formData: FormData): Promise<void> {
+  if (!UUID.test(bezichtigerId)) redirect("/leads");
+  const oordeel = valideerLeadLinks({ linkedin: String(formData.get("linkedin") ?? ""), facebook: String(formData.get("facebook") ?? ""), instagram: String(formData.get("instagram") ?? "") });
+  const uitkomst = !oordeel.ok
+    ? `fout=link-${oordeel.fout}`
+    : await metHuidigeTenant(async (tx, sessie) => {
+        if (!(await moduleAan(tx, sessie.tenantId, "bezichtigers")) || !(await bewaarLeadLinks(tx, sessie.tenantId, bezichtigerId, oordeel.waarde))) return "fout=onbekend";
+        console.log(`links van de lead van bezichtiger ${bezichtigerId} bijgewerkt door gebruiker ${sessie.gebruikerId}`);
+        return "opgeslagen=1";
+      });
+  revalidatePath(`/leads/${bezichtigerId}`);
+  redirect(`/leads/${bezichtigerId}?${uitkomst}`);
 }
 
 export async function leadUitPijplijn(bezichtigerId: string): Promise<void> {

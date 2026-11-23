@@ -2,7 +2,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { leesBezichtigingen, vervangBezichtigingen } from "./bezichtigers";
 import {
-  bewaarLead, leesLeadKaart, leesLeadStanden, leesPijplijnFases, verwijderLead, zetLeadFase, verwijderPijplijnFase, voegPijplijnFaseToe, wijzigPijplijnFase, zetPijplijnFaseActief,
+  bewaarLead, bewaarLeadLinks, leadsVoorContact, leesLeadKaart, leesLeadStanden, leesPijplijnFases, verwijderLead, zetLeadContact, zetLeadFase, verwijderPijplijnFase, voegPijplijnFaseToe, wijzigPijplijnFase, zetPijplijnFaseActief,
   zetPijplijnVolgorde,
 } from "./pijplijn";
 import { maakDb, metTenant, type Db } from "./verbinding";
@@ -103,6 +103,25 @@ describe.skipIf(!process.env.DB_INTEGRATIE)("pijplijnfases in de database", () =
       expect(kaart!.lead).toMatchObject({ faseId: eerste, eigenaarId: medewerker, notitie: "blijft staan" });
       expect(kaart!.historie).toHaveLength(3);
       await metTenant(db, a, (tx) => zetLeadFase(tx, a, bezichtiger, verloren, gebruiker));
+    });
+
+    it("legt contactgegevens uit Realworks vast en laat handmatig ingevulde links staan", async () => {
+      const [lead] = await metTenant(db, a, (tx) => leadsVoorContact(tx, a));
+      expect(lead).toMatchObject({ relatieId: 5001 });
+      expect(await metTenant(db, b, (tx) => leadsVoorContact(tx, b))).toEqual([]);
+      expect((await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger)))!.lead).toMatchObject({ email: null, contactOpgehaaldOp: null });
+      expect(await metTenant(db, a, (tx) => bewaarLeadLinks(tx, a, bezichtiger, { linkedin: "https://www.linkedin.com/in/handmatig", facebook: null, instagram: null }))).toBe(true);
+      expect(await metTenant(db, b, (tx) => bewaarLeadLinks(tx, b, bezichtiger, { linkedin: null, facebook: null, instagram: null }))).toBe(false);
+      const contact = { email: "t@voorbeeld.test", telefoon: "0600000000", website: "https://voorbeeld.test", links: { linkedin: "https://www.linkedin.com/in/realworks", facebook: "https://facebook.com/voorbeeld", instagram: null } };
+      await metTenant(db, a, (tx) => zetLeadContact(tx, a, lead!.leadId, contact));
+      await metTenant(db, b, (tx) => zetLeadContact(tx, b, lead!.leadId, { ...contact, email: "gekaapt@voorbeeld.test" }));
+      const na = (await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger)))!.lead!;
+      expect(na).toMatchObject({
+        email: "t@voorbeeld.test", telefoon: "0600000000", website: "https://voorbeeld.test",
+        links: { linkedin: "https://www.linkedin.com/in/handmatig", facebook: "https://facebook.com/voorbeeld", instagram: null },
+      });
+      expect(na.contactOpgehaaldOp).toBeInstanceOf(Date);
+      expect(await metTenant(db, a, (tx) => leadsVoorContact(tx, a, lead!.leadId))).toHaveLength(1);
     });
 
     it("laat een ander kantoor de lead niet zien of wijzigen", async () => {

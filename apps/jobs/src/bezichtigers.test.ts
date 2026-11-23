@@ -9,10 +9,16 @@ describe("leesSyncBericht", () => {
     expect(leesSyncBericht({ tenantId: TENANT, syncId: SYNC })).toEqual({ tenantId: TENANT, syncId: SYNC });
   });
 
+  it("accepteert een bericht voor de contactgegevens van één lead", () => {
+    expect(leesSyncBericht({ tenantId: TENANT, leadId: SYNC })).toEqual({ tenantId: TENANT, leadId: SYNC });
+  });
+
   it("weigert alles wat daarvan afwijkt", () => {
     expect(leesSyncBericht(null)).toBeNull();
     expect(leesSyncBericht("tekst")).toBeNull();
     expect(leesSyncBericht({ tenantId: TENANT })).toBeNull();
+    expect(leesSyncBericht({ tenantId: TENANT, leadId: "geen-uuid" })).toBeNull();
+    expect(leesSyncBericht({ syncId: SYNC, leadId: SYNC })).toBeNull();
     expect(leesSyncBericht({ tenantId: "cr", syncId: SYNC })).toBeNull();
     expect(leesSyncBericht({ tenantId: TENANT, syncId: SYNC, naam: "extra veld" })).toBeNull();
   });

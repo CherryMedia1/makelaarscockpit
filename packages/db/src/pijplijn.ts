@@ -1,5 +1,5 @@
 // Pijplijn voor bezichtigersleads (issue #54, ADR-020). Altijd binnen metTenant, met filter op tenant_id. Alleen id's in logs.
-import type { FaseSoort, LeadInvoer, PijplijnFase } from "@makelaarscockpit/domain";
+import type { FaseSoort, LeadInvoer, LeadLinks, PijplijnFase, RelatieContact } from "@makelaarscockpit/domain";
 import type { Tx } from "./verbinding";
 
 /** Alle fases van de tenant in volgorde, ook de uitgezette. */
@@ -72,7 +72,20 @@ export type LeadKaart = {
   bezichtigerId: string;
   naam: string | null;
   naamGezocht: boolean;
-  lead: { id: string; faseId: string; eigenaarId: string | null; notitie: string | null; aangemaaktOp: Date; gewijzigdOp: Date } | null;
+  lead: {
+    id: string;
+    faseId: string;
+    eigenaarId: string | null;
+    notitie: string | null;
+    aangemaaktOp: Date;
+    gewijzigdOp: Date;
+    email: string | null;
+    telefoon: string | null;
+    website: string | null;
+    links: LeadLinks;
+    /** Null zolang de contactgegevens nog niet uit Realworks zijn opgehaald. */
+    contactOpgehaaldOp: Date | null;
+  } | null;
   historie: { op: Date; van: string | null; naar: string; door: string | null }[];
 };
 
@@ -80,7 +93,8 @@ export type LeadKaart = {
 export async function leesLeadKaart(tx: Tx, tenantId: string, bezichtigerId: string): Promise<LeadKaart | null> {
   const basis = await tx.query(
     `select b.id as "bezichtigerId", b.naam, b.naam_opgehaald_op is not null as "naamGezocht",
-            l.id as "leadId", l.fase_id as "faseId", l.eigenaar_medewerker_id as "eigenaarId", l.notitie, l.aangemaakt_op as "aangemaaktOp", l.gewijzigd_op as "gewijzigdOp"
+            l.id as "leadId", l.fase_id as "faseId", l.eigenaar_medewerker_id as "eigenaarId", l.notitie, l.aangemaakt_op as "aangemaaktOp", l.gewijzigd_op as "gewijzigdOp",
+            l.email, l.telefoon, l.website, l.linkedin_url as linkedin, l.facebook_url as facebook, l.instagram_url as instagram, l.contact_opgehaald_op as "contactOpgehaaldOp"
        from bezichtiger b
        left join lead l on l.bezichtiger_id = b.id and l.tenant_id = b.tenant_id
       where b.tenant_id = $1 and b.id = $2`,
@@ -104,7 +118,12 @@ export async function leesLeadKaart(tx: Tx, tenantId: string, bezichtigerId: str
     : [];
   return {
     bezichtigerId: r.bezichtigerId, naam: r.naam, naamGezocht: r.naamGezocht,
-    lead: r.leadId ? { id: r.leadId, faseId: r.faseId, eigenaarId: r.eigenaarId, notitie: r.notitie, aangemaaktOp: r.aangemaaktOp, gewijzigdOp: r.gewijzigdOp } : null,
+    lead: r.leadId
+      ? {
+          id: r.leadId, faseId: r.faseId, eigenaarId: r.eigenaarId, notitie: r.notitie, aangemaaktOp: r.aangemaaktOp, gewijzigdOp: r.gewijzigdOp,
+          email: r.email, telefoon: r.telefoon, website: r.website, links: { linkedin: r.linkedin, facebook: r.facebook, instagram: r.instagram }, contactOpgehaaldOp: r.contactOpgehaaldOp,
+        }
+      : null,
     historie: historie as LeadKaart["historie"],
   };
 }
@@ -113,7 +132,7 @@ export async function leesLeadKaart(tx: Tx, tenantId: string, bezichtigerId: str
  * Zet de bezichtiger in de pijplijn of werkt zijn lead bij. Een nieuwe of gewijzigde fase komt in de historie.
  * Geeft null als de bezichtiger niet bij deze tenant hoort.
  */
-export async function bewaarLead(tx: Tx, tenantId: string, bezichtigerId: string, invoer: LeadInvoer, gebruikerId: string): Promise<{ leadId: string; faseGewijzigd: boolean } | null> {
+export async function bewaarLead(tx: Tx, tenantId: string, bezichtigerId: string, invoer: LeadInvoer, gebruikerId: string): Promise<{ leadId: string; faseGewijzigd: boolean; nieuw: boolean } | null> {
   const bezichtiger = await tx.query("select 1 from bezichtiger where tenant_id = $1 and id = $2", [tenantId, bezichtigerId]);
   if (bezichtiger.rowCount !== 1) return null;
   const vorige = await tx.query("select id, fase_id from lead where tenant_id = $1 and bezichtiger_id = $2 for update", [tenantId, bezichtigerId]);
@@ -131,7 +150,48 @@ export async function bewaarLead(tx: Tx, tenantId: string, bezichtigerId: string
   if (faseGewijzigd) {
     await tx.query("insert into lead_historie (tenant_id, lead_id, van_fase_id, naar_fase_id, door_gebruiker_id) values ($1, $2, $3, $4, $5)", [tenantId, leadId, vorigeFase, invoer.faseId, gebruikerId]);
   }
-  return { leadId, faseGewijzigd };
+  return { leadId, faseGewijzigd, nieuw: vorigeFase === null };
+}
+
+/** De leads waarvan de contactgegevens uit Realworks moeten komen: één lead, of alle leads van de tenant. */
+export async function leadsVoorContact(tx: Tx, tenantId: string, leadId?: string): Promise<{ leadId: string; relatieId: number }[]> {
+  const { rows } = await tx.query(
+    `select l.id as "leadId", b.realworks_relatie_id as "relatieId"
+       from lead l
+       join bezichtiger b on b.id = l.bezichtiger_id and b.tenant_id = l.tenant_id
+      where l.tenant_id = $1 and ($2::uuid is null or l.id = $2)
+      order by l.contact_opgehaald_op nulls first`,
+    [tenantId, leadId ?? null],
+  );
+  return rows.map((r) => ({ leadId: r.leadId as string, relatieId: Number(r.relatieId) }));
+}
+
+/**
+ * Legt de contactgegevens uit Realworks vast. Realworks is leidend voor e-mail, telefoon en website. Een link naar
+ * social media uit Realworks vult alleen een leeg veld: wat een medewerker heeft ingevuld, blijft staan. Met
+ * `contact` null (relatie niet meer in Realworks) wordt alleen vastgelegd dat het is geprobeerd.
+ */
+export async function zetLeadContact(tx: Tx, tenantId: string, leadId: string, contact: RelatieContact | null): Promise<void> {
+  if (!contact) {
+    await tx.query("update lead set contact_opgehaald_op = now() where tenant_id = $1 and id = $2", [tenantId, leadId]);
+    return;
+  }
+  await tx.query(
+    `update lead
+        set email = $3, telefoon = $4, website = $5, linkedin_url = coalesce(linkedin_url, $6), facebook_url = coalesce(facebook_url, $7),
+            instagram_url = coalesce(instagram_url, $8), contact_opgehaald_op = now()
+      where tenant_id = $1 and id = $2`,
+    [tenantId, leadId, contact.email, contact.telefoon, contact.website, contact.links.linkedin, contact.links.facebook, contact.links.instagram],
+  );
+}
+
+/** Legt de links vast die een medewerker op de lead-kaart invult; false als de bezichtiger geen lead heeft. */
+export async function bewaarLeadLinks(tx: Tx, tenantId: string, bezichtigerId: string, links: LeadLinks): Promise<boolean> {
+  const { rowCount } = await tx.query(
+    "update lead set linkedin_url = $3, facebook_url = $4, instagram_url = $5, gewijzigd_op = now() where tenant_id = $1 and bezichtiger_id = $2",
+    [tenantId, bezichtigerId, links.linkedin, links.facebook, links.instagram],
+  );
+  return rowCount === 1;
 }
 
 /**
