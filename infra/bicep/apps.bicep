@@ -376,7 +376,17 @@ var intakeJobs = [
   }
 ]
 
-resource queueJobs 'Microsoft.App/jobs@2026-01-01' = [for job in (intakeEnabled ? intakeJobs : []): {
+// Bezichtigersleads (ADR-019, issue #51): synchroniseren op verzoek vanuit het portaal. Zelfde patroon; de module staat
+// per tenant aan of uit in de database, niet in de infra.
+var bezichtigersJobs = [
+  {
+    naam: 'bezichtigers'
+    commando: 'sync-bezichtigers'
+    queue: 'bezichtigers-sync'
+  }
+]
+
+resource queueJobs 'Microsoft.App/jobs@2026-01-01' = [for job in concat(intakeEnabled ? intakeJobs : [], bezichtigersJobs): {
   name: 'job-${job.naam}-cockpit-${env}-${regionShort}'
   location: location
   tags: tags
