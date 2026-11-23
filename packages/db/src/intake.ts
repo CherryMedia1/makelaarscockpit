@@ -2,7 +2,7 @@
 import { voegSamen, type BestaandVeld, type Besluit, type Bron, type BronType, type DossierVoorOpschonen } from "@makelaarscockpit/domain";
 import type { Tx } from "./verbinding";
 
-export type Module = "intake";
+export type Module = "intake" | "bezichtigers";
 export type Verwerkstatus = "nieuw" | "bezig" | "verwerkt" | "mislukt" | "verwijderd";
 
 export interface Bewijs {
