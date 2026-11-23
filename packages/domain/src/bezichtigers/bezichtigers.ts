@@ -7,6 +7,19 @@ const BEZICHTIGING = /bezicht|open huis/i;
 /** Elke soort bezichtiging telt: 1e, 2e, planner, aankoop, huur en open huis (besluit Tim, 2026-11-23). */
 export const isBezichtigingType = (agendatype: string | null): boolean => agendatype !== null && BEZICHTIGING.test(agendatype);
 
+/** Zo lang bewaren we een bezichtiging na de afspraak (besluit Tim, 2026-11-23; ADR-019). */
+export const BEZICHTIGING_BEWAARTERMIJN_MAANDEN = 6;
+
+/** De oudste dag ('JJJJ-MM-DD') waarvan we bezichtigingen bewaren: zes maanden voor vandaag. */
+export function bezichtigingenVanaf(vandaag: string): string {
+  const [jaar, maand, dag] = vandaag.split("-").map(Number) as [number, number, number];
+  const eerste = new Date(Date.UTC(jaar, maand - 1 - BEZICHTIGING_BEWAARTERMIJN_MAANDEN, 1));
+  // Bestaat de dag niet in die maand (31 augustus → februari), dan de laatste dag van die maand.
+  const laatsteDag = new Date(Date.UTC(eerste.getUTCFullYear(), eerste.getUTCMonth() + 1, 0)).getUTCDate();
+  eerste.setUTCDate(Math.min(dag, laatsteDag));
+  return eerste.toISOString().slice(0, 10);
+}
+
 /** Een bezichtiging zoals wij haar spiegelen: type, moment, project en de relatie. Nooit de notities van het agendapunt. */
 export type BezichtigingUitRealworks = {
   realworksId: number;
@@ -23,10 +36,12 @@ export type BezichtigingUitRealworks = {
 
 /**
  * Maakt van een agendapunt een bezichtiging, of null als het er geen is. Zonder gekoppelde klant is er geen lead: een
- * medewerker als gekoppelde relatie (een blok in de planner) telt niet. Geannuleerde afspraken tellen ook niet.
+ * medewerker als gekoppelde relatie (een blok in de planner) telt niet. Geannuleerde afspraken tellen ook niet, en
+ * afspraken van vóór `vanaf` (zie bezichtigingenVanaf) worden niet meer bewaard.
  */
-export function naarBezichtiging(a: AgendapuntGegevens, medewerkerIds: ReadonlySet<number>): BezichtigingUitRealworks | null {
+export function naarBezichtiging(a: AgendapuntGegevens, medewerkerIds: ReadonlySet<number>, vanaf: string): BezichtigingUitRealworks | null {
   if (!a.agendatype || !isBezichtigingType(a.agendatype) || !a.begintijd || a.relatieId === null) return null;
+  if (a.begintijd.slice(0, 10) < vanaf) return null;
   if (medewerkerIds.has(a.relatieId) || a.status === "Geannuleerd") return null;
   return {
     realworksId: a.realworksId, relatieId: a.relatieId, agendatype: a.agendatype, status: a.status, tijdstip: a.begintijd,

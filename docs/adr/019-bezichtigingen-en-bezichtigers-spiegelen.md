@@ -20,7 +20,8 @@ Besluiten van Tim (2026-11-23):
 
    Niet bewaard: de notities van het agendapunt (`extraInfo`, `korteOmschrijving`), en van de relatie alles behalve de naam (geen e-mail, telefoon, adres of geslacht). Ruwe antwoorden van bezichtigingen en relaties gaan niet naar de blob.
 4. **Alleen intern gebruik, alleen lezen.** Het overzicht is voor medewerkers van het kantoor zelf. Deze plak bevat geen enkele actie naar buiten: geen mailing, export, bellijst of advertentiedoelgroep. Die komen er pas met vastgelegde toestemming per kanaal en goedkeuring door een medewerker, in een volgende ADR.
-5. **Realworks is leidend voor het bestaan.** De sync vervangt bij elke run de stand, idempotent op het Realworks-id. Een bezichtiging die Realworks niet meer levert (geannuleerd, verwijderd, of ouder dan de vrijgegeven periode van de Agenda-API) verdwijnt bij ons; een bezichtiger zonder bezichtigingen verdwijnt met zijn naam. De vrijgegeven periode in Realworks is daarmee voorlopig de bewaartermijn.
+5. **Realworks is leidend voor het bestaan.** De sync vervangt bij elke run de stand, idempotent op het Realworks-id. Een bezichtiging die Realworks niet meer levert (geannuleerd, verwijderd, of ouder dan de vrijgegeven periode van de Agenda-API) verdwijnt bij ons; een bezichtiger zonder bezichtigingen verdwijnt met zijn naam. 
+   **Bewaartermijn zes maanden** (besluit Tim, 2026-11-23, issue #50): de sync bewaart alleen bezichtigingen van de laatste zes maanden en wat nog gepland staat. Wat ouder is, verdwijnt bij de eerstvolgende run.
 6. **Namen ophalen:** per relatie één GET op de Relatie-API via `packages/realworks`, alleen voor bezichtigers zonder naam of met een naam ouder dan 30 dagen, een paar tegelijk en binnen een tijdsbudget per run. Er wordt niets naar Realworks geschreven (ADR-005).
 7. **Rollen:** elke medewerker van de tenant ziet het overzicht, net als de andere dashboards (ADR-006).
 ## Gevolgen
@@ -30,4 +31,4 @@ Besluiten van Tim (2026-11-23):
 - De eerste run haalt een naam op voor elke bezichtiger (bij C&R ruim tweeduizend calls). Of Realworks daar een limiet op heeft, is niet bekend; bij een 429 of een vol tijdsbudget stopt het ophalen en gaat het de volgende run verder. Tot dan toont het overzicht "Naam nog niet opgehaald".
 - Welke code de Relatie-API als `bedrijfscode` verwacht, is niet vastgesteld; de sync probeert de bedrijfscode en daarna de afdelingscode.
 - In logs staan alleen aantallen en een HTTP-status, nooit een naam of relatie-id (harde regel 2).
-- **Open, voor het volledige plan:** een eigen bewaartermijn per tenant voor bezichtigers zonder toestemming (vraag voor C&R en jurist), toestemming per kanaal, de signalen uit Realworks voor intrekken (`geenMailing`), en of aankoop- en huurbezichtigingen op termijn apart getoond worden.
+- **Open, voor het volledige plan:** of de bewaartermijn van zes maanden een instelling per tenant wordt en of ze anders is met toestemming (vraag voor C&R en jurist), toestemming per kanaal, de signalen uit Realworks voor intrekken (`geenMailing`), en of aankoop- en huurbezichtigingen op termijn apart getoond worden.

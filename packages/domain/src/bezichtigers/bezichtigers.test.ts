@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { AgendapuntGegevens } from "../realworks-gegevens";
-import { filterLeads, groepeerLeads, isBezichtigingType, leadCijfers, naarBezichtiging, type BezichtigingRegel } from "./bezichtigers";
+import { bezichtigingenVanaf, filterLeads, groepeerLeads, isBezichtigingType, leadCijfers, naarBezichtiging, type BezichtigingRegel } from "./bezichtigers";
 
 const VANDAAG = "2026-11-23";
 const MEDEWERKERS = new Set([900, 901]);
+const VANAF = "2026-05-23";
 
 const agendapunt = (over: Partial<AgendapuntGegevens> = {}): AgendapuntGegevens => ({
   realworksId: 1, agendatype: "1e bezichtiging", status: "Definitief", begintijd: "2026-11-10 14:00:00", eindtijd: "2026-11-10 14:30:00",
@@ -30,24 +31,42 @@ describe("isBezichtigingType", () => {
 
 describe("naarBezichtiging", () => {
   it("neemt type, moment, project en de gekoppelde relatie over, zonder notities", () => {
-    expect(naarBezichtiging(agendapunt(), MEDEWERKERS)).toEqual({
+    expect(naarBezichtiging(agendapunt(), MEDEWERKERS, VANAF)).toEqual({
       realworksId: 1, relatieId: 5001, agendatype: "1e bezichtiging", status: "Definitief", tijdstip: "2026-11-10 14:00:00",
       projectcode: "P-1", projecttype: "WONEN", locatie: "1234 AB  Testdorp Proefstraat 1", medewerkerRealworksId: 900,
     });
   });
 
   it("slaat afspraken over die geen bezichtiging zijn, geen moment of geen gekoppelde relatie hebben", () => {
-    expect(naarBezichtiging(agendapunt({ agendatype: "Waardebepaling" }), MEDEWERKERS)).toBeNull();
-    expect(naarBezichtiging(agendapunt({ begintijd: null }), MEDEWERKERS)).toBeNull();
-    expect(naarBezichtiging(agendapunt({ relatieId: null }), MEDEWERKERS)).toBeNull();
+    expect(naarBezichtiging(agendapunt({ agendatype: "Waardebepaling" }), MEDEWERKERS, VANAF)).toBeNull();
+    expect(naarBezichtiging(agendapunt({ begintijd: null }), MEDEWERKERS, VANAF)).toBeNull();
+    expect(naarBezichtiging(agendapunt({ relatieId: null }), MEDEWERKERS, VANAF)).toBeNull();
   });
 
   it("telt een medewerker als gekoppelde relatie niet als lead (bijvoorbeeld een bezichtigingsblok)", () => {
-    expect(naarBezichtiging(agendapunt({ agendatype: "Bezichtigingsblok (planner)", relatieId: 901 }), MEDEWERKERS)).toBeNull();
+    expect(naarBezichtiging(agendapunt({ agendatype: "Bezichtigingsblok (planner)", relatieId: 901 }), MEDEWERKERS, VANAF)).toBeNull();
+  });
+
+  it("bewaart alleen bezichtigingen van de laatste zes maanden en wat nog gepland staat", () => {
+    expect(naarBezichtiging(agendapunt({ begintijd: "2026-05-22 16:00:00" }), MEDEWERKERS, VANAF)).toBeNull();
+    expect(naarBezichtiging(agendapunt({ begintijd: "2026-05-23 09:00:00" }), MEDEWERKERS, VANAF)).not.toBeNull();
+    expect(naarBezichtiging(agendapunt({ begintijd: "2027-01-10 09:00:00" }), MEDEWERKERS, VANAF)).not.toBeNull();
   });
 
   it("slaat geannuleerde afspraken over", () => {
-    expect(naarBezichtiging(agendapunt({ status: "Geannuleerd" }), MEDEWERKERS)).toBeNull();
+    expect(naarBezichtiging(agendapunt({ status: "Geannuleerd" }), MEDEWERKERS, VANAF)).toBeNull();
+  });
+});
+
+describe("bezichtigingenVanaf", () => {
+  it("gaat zes maanden terug vanaf vandaag", () => {
+    expect(bezichtigingenVanaf("2026-11-23")).toBe("2026-05-23");
+    expect(bezichtigingenVanaf("2026-03-15")).toBe("2025-09-15");
+  });
+
+  it("kiest de laatste dag van de maand als die dag daar niet bestaat", () => {
+    expect(bezichtigingenVanaf("2026-08-31")).toBe("2026-02-28");
+    expect(bezichtigingenVanaf("2024-08-30")).toBe("2024-02-29");
   });
 });
 

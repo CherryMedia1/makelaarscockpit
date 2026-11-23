@@ -7,7 +7,7 @@ import {
   zetBezichtigerNamen, zoekTenant, type Tenant,
 } from "@makelaarscockpit/db";
 import {
-  naarBezichtiging, naarWaardebepaling, objectNaarVerkoop,
+  bezichtigingenVanaf, naarBezichtiging, naarWaardebepaling, objectNaarVerkoop,
   type AgendapuntGegevens, type BezichtigingUitRealworks, type ObjectGegevens, type VerkoopUitRealworks, type WaardebepalingUitRealworks,
 } from "@makelaarscockpit/domain";
 import { RealworksFout, haalAgendapunten, haalMedewerkers, haalRelatieNaam, haalWonenObjecten, type RealworksApi, type RealworksOpties } from "@makelaarscockpit/realworks";
@@ -87,7 +87,8 @@ const vandaagInNederland = () => new Intl.DateTimeFormat("en-CA", { timeZone: "E
  * De agenda (issue #9 en #10). De Agenda-API kent geen filters, dus de hele agenda komt langs. Bewaard worden alleen
  * waardebepalingen en de afspraken die bij een woning horen (verkoopgesprek, foto's, tekenafspraak, ...), zonder notities.
  * Daarna wordt het bord "Woningen in verkoop" bijgewerkt. Alleen waardebepalingen gaan als ruw antwoord naar de blob.
- * Met medewerkerIds (module bezichtigers aan, ADR-019) worden ook bezichtigingen met een gekoppelde klant gespiegeld.
+ * Met medewerkerIds (module bezichtigers aan, ADR-019) worden ook bezichtigingen met een gekoppelde klant gespiegeld,
+ * van de laatste zes maanden en wat nog gepland staat; wat ouder is, verdwijnt.
  */
 async function agendaSpiegelen(
   db: ReturnType<typeof maakDb>, tenantId: string, afdelingscode: string | null, opties: RealworksOpties, map: string, medewerkerIds: ReadonlySet<number> | null,
@@ -99,6 +100,7 @@ async function agendaSpiegelen(
   const waardebepalingen: WaardebepalingUitRealworks[] = [];
   const woningAfspraken: AgendapuntGegevens[] = [];
   const bezichtigingen: BezichtigingUitRealworks[] = [];
+  const bezichtigingenSinds = bezichtigingenVanaf(vandaagInNederland());
   const ruw: unknown[] = [];
   let paginas = 0;
   let agendapunten = 0;
@@ -112,7 +114,7 @@ async function agendaSpiegelen(
         ruw.push(blok.ruw[i]);
       }
       if (a.agendatype && WONING_AGENDATYPES.has(a.agendatype)) woningAfspraken.push(a);
-      const b = medewerkerIds && naarBezichtiging(a, medewerkerIds);
+      const b = medewerkerIds && naarBezichtiging(a, medewerkerIds, bezichtigingenSinds);
       if (b) bezichtigingen.push(b);
     });
   }
