@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Users } from "lucide-react";
 import { filterLeads, leadCijfers, type Lead } from "@makelaarscockpit/domain";
 import { Kaart, KpiTegel, Label, LegeStaat, Melding, PaginaKop, knopKlassen } from "@/components/basis";
 import { Keuze } from "@/components/formulier";
 import { HorizontaalScroller } from "@/components/horizontaal-scroller";
 import { RijenKiezer } from "@/components/rijen-kiezer";
 import { aantal, datum } from "@/lib/format";
-import { haalLeadOverzicht } from "@/lib/leads";
+import { haalLeadOverzicht, type LeadSync } from "@/lib/leads";
+import { leadsSynchroniseren } from "./acties";
 
 export const metadata: Metadata = { title: "Leads uit bezichtigingen" };
 
@@ -28,6 +29,16 @@ async function laad() {
   }
 }
 
+const SYNC_MELDING: Record<string, { titel: string; tekst: string; soort?: "fout" }> = {
+  gestart: { titel: "Synchronisatie gestart", tekst: "De bezichtigingen worden opgehaald uit Realworks. Dat duurt een paar minuten; ververs daarna de pagina." },
+  loopt: { titel: "Er loopt al een synchronisatie", tekst: "Wacht tot die klaar is en ververs dan de pagina." },
+  te_snel: { titel: "Er is net gesynchroniseerd", tekst: "Synchroniseren kan één keer per kwartier." },
+  mislukt: { titel: "Synchroniseren is niet gelukt", tekst: "Het verzoek kon niet worden verstuurd. Probeer het over een paar minuten opnieuw.", soort: "fout" },
+};
+
+const moment = (d: Date) => new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);
+const uur = (d: Date) => new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", hour: "2-digit", minute: "2-digit" }).format(d);
+
 const dagEnTijd = (tijdstip: string) => `${datum(new Date(`${tijdstip.slice(0, 10)}T00:00:00`))}, ${tijdstip.slice(11, 16)}`;
 const alleenDag = (tijdstip: string) => datum(new Date(`${tijdstip.slice(0, 10)}T00:00:00`));
 
@@ -37,9 +48,9 @@ function dagenTerug(vandaag: string, dagen: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default async function Leads({ searchParams }: { searchParams: Promise<{ periode?: string; woning?: string; makelaar?: string; aantal?: string; rijen?: string; pagina?: string }> }) {
+export default async function Leads({ searchParams }: { searchParams: Promise<{ periode?: string; woning?: string; makelaar?: string; aantal?: string; rijen?: string; pagina?: string; sync?: string }> }) {
   await connection();
-  const { periode: periodeParam, woning = "", makelaar = "", aantal: aantalParam, rijen: rijenParam, pagina: paginaParam } = await searchParams;
+  const { periode: periodeParam, woning = "", makelaar = "", aantal: aantalParam, rijen: rijenParam, pagina: paginaParam, sync: syncParam } = await searchParams;
   const d = await laad();
   if (!d) {
     return (
@@ -60,6 +71,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
     );
   }
 
+  const syncMelding = syncParam ? SYNC_MELDING[syncParam] : undefined;
   const periode = PERIODES.find((p) => p.waarde === periodeParam)?.waarde ?? "";
   const meerdere = aantalParam === "meerdere";
   const lijst = filterLeads(d.leads, {
@@ -93,6 +105,13 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
         titel="Leads uit bezichtigingen"
         toelichting="Iedereen met een bezichtiging in de laatste zes maanden of een geplande bezichtiging, één regel per relatie. Dit overzicht is voor gebruik binnen het kantoor."
       />
+
+      {syncMelding && (
+        <Melding titel={syncMelding.titel} {...(syncMelding.soort ? { soort: syncMelding.soort } : {})}>
+          {syncMelding.tekst}
+        </Melding>
+      )}
+      {d.sync && <SyncBalk sync={d.sync} />}
 
       {d.isVoorbeeld && (
         <Melding titel="Dit zijn voorbeeldgegevens">
@@ -196,6 +215,36 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
         </nav>
       )}
     </>
+  );
+}
+
+/** Wanneer er voor het laatst is bijgewerkt, hoe de laatste aanvraag afliep, en de knop om nu te synchroniseren. */
+function SyncBalk({ sync }: { sync: LeadSync }) {
+  const { laatste, aanvraag } = sync;
+  const loopt = !aanvraag.mag && aanvraag.reden === "loopt";
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
+      <div className="text-body-sm">
+        <p>
+          <span className="text-label">Laatst bijgewerkt:</span> {sync.bijgewerktOp ? moment(sync.bijgewerktOp) : "nog niet"}
+          <span className="text-text-muted"> · elke dag automatisch, en op verzoek met de knop</span>
+        </p>
+        {loopt && <p className="text-text-muted">Er loopt een synchronisatie. Ververs de pagina over een paar minuten.</p>}
+        {!loopt && laatste?.status === "mislukt" && (
+          <p className="text-fout-fg">De laatste synchronisatie op verzoek ({moment(laatste.aangevraagdOp)}) is mislukt. Probeer het opnieuw; blijft dit zo, neem dan contact op met de beheerder.</p>
+        )}
+        {!loopt && laatste?.status === "klaar" && (laatste.namenOpen ?? 0) > 0 && (
+          <p className="text-text-muted">Van {aantal(laatste.namenOpen ?? 0)} bezichtigers is de naam nog niet opgehaald; dat gebeurt bij de volgende synchronisatie.</p>
+        )}
+        {!aanvraag.mag && aanvraag.reden === "te_snel" && <p className="text-text-muted">Opnieuw synchroniseren kan vanaf {uur(aanvraag.weerOm)}.</p>}
+      </div>
+      <form action={leadsSynchroniseren}>
+        <button type="submit" disabled={!aanvraag.mag} className={`${knopKlassen("secundair")} disabled:cursor-not-allowed disabled:opacity-50`}>
+          <RefreshCw aria-hidden size={18} strokeWidth={1.75} />
+          Synchroniseren
+        </button>
+      </form>
+    </div>
   );
 }
 
