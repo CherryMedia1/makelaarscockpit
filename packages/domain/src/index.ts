@@ -12,3 +12,4 @@ export * from "./intake/samenvoegen";
 export * from "./intake/opschonen";
 export * from "./tekst/controles";
 export * from "./bezichtigers/bezichtigers";
+export * from "./bezichtigers/sync";
