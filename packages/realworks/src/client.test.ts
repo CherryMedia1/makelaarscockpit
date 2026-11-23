@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { RealworksFout, haalAgendapunten, haalMedewerkers, haalWonenObjecten, naarAgendapunt, naarMedewerker, naarObject } from "./index";
+import { RealworksFout, haalAgendapunten, haalMedewerkers, haalRelatieNaam, haalWonenObjecten, naarAgendapunt, naarMedewerker, naarObject, naarRelatieNaam } from "./index";
 
 // Verzonnen antwoorden in de vorm van de echte API (zie examples/wonen-object-velden.md); geen echte gegevens.
 const wonenObject = (id: number, overdracht: Record<string, unknown> = {}) => ({
@@ -139,5 +139,35 @@ describe("haalAgendapunten", () => {
     expect(paginas[0]!.agendapunten[0]!.realworksId).toBe(1);
     expect(paginas[0]!.totaal).toBe(2);
     expect(fetch.mock.calls[0]![0]).toBe("https://api.realworks.nl/agenda/v3/afdeling/935773?aantal=100");
+  });
+});
+
+describe("naarRelatieNaam", () => {
+  it("maakt de naam van een persoon uit roepnaam, tussenvoegsel en achternaam", () => {
+    expect(naarRelatieNaam({ id: 1, roepnaam: "Test", tussenvoegsel: "van", achternaam: "Voorbeeld", emailadressen: [{ email: "t@voorbeeld.test" }] })).toBe("Test van Voorbeeld");
+  });
+
+  it("valt terug op voornamen of initialen, en bij een bedrijf op de bedrijfsnaam", () => {
+    expect(naarRelatieNaam({ achternaam: "Voorbeeld", overige: { voornamen: "Test Proef" } })).toBe("Test Proef Voorbeeld");
+    expect(naarRelatieNaam({ achternaam: "Voorbeeld", initialen: "T." })).toBe("T. Voorbeeld");
+    expect(naarRelatieNaam({ adresgegevens: { bedrijfsadres: { bedrijfsnaam: "Voorbeeld BV" } } })).toBe("Voorbeeld BV");
+    expect(naarRelatieNaam({})).toBeNull();
+  });
+});
+
+describe("haalRelatieNaam", () => {
+  it("haalt één relatie op met de bedrijfscode en geeft alleen de naam terug", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(antwoord({ id: 7, roepnaam: "Test", achternaam: "Voorbeeld", telefoonnummers: [{ nummer: "0600000000" }] }));
+    expect(await haalRelatieNaam({ token: async () => "geheim", fetch }, 7, "935585")).toEqual({ gevonden: true, naam: "Test Voorbeeld" });
+    expect(fetch.mock.calls[0]![0]).toBe("https://api.realworks.nl/relaties/v1/7?bedrijfscode=935585");
+    expect(fetch.mock.calls[0]![1].headers.Authorization).toBe("rwauth geheim");
+  });
+
+  it("meldt een relatie die niet meer bestaat, en gooit bij andere fouten zonder het relatie-id in de melding", async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(antwoord({}, 404)).mockResolvedValueOnce(antwoord({}, 429));
+    expect(await haalRelatieNaam({ token: async () => "geheim", fetch }, 7, "935585")).toEqual({ gevonden: false });
+    const poging = haalRelatieNaam({ token: async () => "geheim", fetch }, 123456, "935585");
+    await expect(poging).rejects.toBeInstanceOf(RealworksFout);
+    await expect(poging).rejects.toMatchObject({ status: 429, message: expect.not.stringContaining("123456") });
   });
 });
