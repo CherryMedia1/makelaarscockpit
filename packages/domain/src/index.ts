@@ -13,3 +13,4 @@ export * from "./intake/opschonen";
 export * from "./tekst/controles";
 export * from "./bezichtigers/bezichtigers";
 export * from "./bezichtigers/sync";
+export * from "./bezichtigers/pijplijn";

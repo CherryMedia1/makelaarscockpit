@@ -8,3 +8,4 @@ export * from "./woningen";
 export * from "./intake";
 export * from "./tekst";
 export * from "./bezichtigers";
+export * from "./pijplijn";
