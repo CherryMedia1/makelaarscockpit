@@ -64,7 +64,7 @@ export async function zetBezichtigerNamen(tx: Tx, tenantId: string, namen: reado
 /** Alle bezichtigingen van de tenant met naam, woning en makelaar, voor het leadoverzicht. */
 export async function leesBezichtigingen(tx: Tx, tenantId: string): Promise<BezichtigingRegel[]> {
   const { rows } = await tx.query(
-    `select g.id, g.bezichtiger_id as "bezichtigerId", b.naam, g.agendatype, g.status, to_char(g.tijdstip, 'YYYY-MM-DD HH24:MI') as tijdstip, g.projectcode,
+    `select g.id, g.bezichtiger_id as "bezichtigerId", b.naam, b.naam_opgehaald_op is not null as "naamGezocht", g.agendatype, g.status, to_char(g.tijdstip, 'YYYY-MM-DD HH24:MI') as tijdstip, g.projectcode,
             coalesce(o.adres, nullif(regexp_replace(g.locatie, '^\\d{4}\\s?[A-Za-z]{2}\\s+', ''), '')) as woning,
             coalesce(m.weergavenaam, 'Onbekend') as makelaar
        from bezichtiging g

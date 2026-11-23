@@ -56,6 +56,7 @@ describe.skipIf(!process.env.DB_INTEGRATIE)("bezichtigers in de database", () =>
       { naam: null, tijdstip: "2026-11-10 14:00", woning: "Proefstraat 1, Testdorp", makelaar: "Makelaar A", projectcode: "P-1" },
     ]);
     expect(regels[0]!.bezichtigerId).toBe(regels[1]!.bezichtigerId);
+    expect(regels.map((r) => r.naamGezocht)).toEqual([true, true, true]);
   });
 
   it("laat een andere tenant niets zien", async () => {

@@ -43,6 +43,7 @@ function voorbeeld(vandaag: string): BezichtigingRegel[] {
       id: String(i),
       bezichtigerId: `voorbeeld-${i % 22}`,
       naam: `Bezichtiger ${String.fromCharCode(65 + (i % 22))}`,
+      naamGezocht: true,
       agendatype: i % 9 === 4 ? "2e bezichtiging" : i % 11 === 0 ? "Bezichtiging (planner)" : "1e bezichtiging",
       status: "Definitief",
       tijdstip: `${dag(i * 4 - 6)} ${10 + (i % 7)}:${i % 2 ? "30" : "00"}`,

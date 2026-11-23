@@ -55,6 +55,8 @@ export type BezichtigingRegel = {
   bezichtigerId: string;
   /** Null zolang de naam niet is opgehaald of de relatie niet meer bestaat. */
   naam: string | null;
+  /** Is de naam al opgezocht in Realworks? Zo ja en toch leeg, dan staat de relatie er niet (meer) in. */
+  naamGezocht: boolean;
   agendatype: string;
   status: string | null;
   /** 'JJJJ-MM-DD UU:MM' in Nederlandse tijd. */
@@ -67,6 +69,7 @@ export type BezichtigingRegel = {
 export type Lead = {
   bezichtigerId: string;
   naam: string | null;
+  naamGezocht: boolean;
   aantal: number;
   aantalWoningen: number;
   eerste: string;
@@ -95,6 +98,7 @@ export function groepeerLeads(regels: readonly BezichtigingRegel[], vandaag: str
     return {
       bezichtigerId,
       naam: bezichtigingen.find((b) => b.naam)?.naam ?? null,
+      naamGezocht: bezichtigingen.some((b) => b.naamGezocht),
       aantal: bezichtigingen.length,
       aantalWoningen: woningen.size,
       eerste: bezichtigingen.at(-1)!.tijdstip,

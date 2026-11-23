@@ -7,6 +7,7 @@ import {
 import { bezichtigingenVanaf, naarBezichtiging, type BezichtigingUitRealworks } from "@makelaarscockpit/domain";
 import { RealworksFout, haalAgendapunten, haalMedewerkers, haalRelatieNaam, type RealworksApi, type RealworksOpties } from "@makelaarscockpit/realworks";
 import { leesSecret } from "./azure";
+import { haalNamenOp } from "./namen-ophalen";
 import { verwerkWachtrij, type Uitkomst } from "./wachtrij";
 
 /** Realworks-tokens van één tenant uit Key Vault, per API één keer opgehaald. */
@@ -40,12 +41,9 @@ export async function spiegelBezichtigingen(db: Db, tenant: Tenant, opties: Real
   return { bezichtigingen: stand.bezichtigingen, bezichtigers: stand.bezichtigers };
 }
 
-const NAMEN_TEGELIJK = 5;
-const NAMEN_TIJDSBUDGET_MS = 5 * 60 * 1000;
-
 /**
- * Haalt de naam op van bezichtigers die er nog geen hebben (ADR-019), een paar tegelijk en binnen een tijdsbudget; wat
- * overblijft, volgt bij de volgende run. In de log staan alleen aantallen en een HTTP-status, nooit een naam of relatie-id.
+ * Haalt de naam op van bezichtigers die er nog geen hebben (ADR-019); wat overblijft, volgt bij de volgende run. Het
+ * gedrag bij fouten en limieten staat in namen-ophalen.ts. In de log staan alleen aantallen en een HTTP-status.
  */
 export async function bezichtigerNamenOphalen(db: Db, tenant: Tenant, opties: RealworksOpties): Promise<{ opgehaald: number; open: number }> {
   const ids = await metTenant(db, tenant.id, (tx) => bezichtigersZonderNaam(tx, tenant.id, 10_000));
@@ -54,42 +52,33 @@ export async function bezichtigerNamenOphalen(db: Db, tenant: Tenant, opties: Re
     console.log(`bezichtigers: ${ids.length} namen op te halen${codes.length === 0 ? " (tenant zonder bedrijfscode, overgeslagen)" : ""}`);
     return { opgehaald: 0, open: ids.length };
   }
-  // Een verkeerde code geeft 400 of 404. Daarom proberen we bij zo'n antwoord ook de andere code; de code die werkt, komt vooraan.
-  const naamVan = async (relatieId: number) => {
-    let laatste: RealworksFout | null = null;
+  // Een verkeerde code geeft 400, 403 of 404. Daarom proberen we bij zo'n antwoord ook de andere code; de code die werkt, komt vooraan.
+  const haalNaam = async (relatieId: number) => {
+    let geweigerd: RealworksFout | null = null;
+    let nietGevonden = false;
     for (const code of [...codes]) {
       try {
         const uitkomst = await haalRelatieNaam(opties, relatieId, code);
-        if (!uitkomst.gevonden) continue;
+        if (!uitkomst.gevonden) {
+          nietGevonden = true;
+          continue;
+        }
         if (codes[0] !== code) codes = [code, ...codes.filter((c) => c !== code)];
         return uitkomst;
       } catch (fout) {
-        if (!(fout instanceof RealworksFout) || fout.status !== 400) throw fout;
-        laatste = fout;
+        if (!(fout instanceof RealworksFout) || (fout.status !== 400 && fout.status !== 403)) throw fout;
+        geweigerd = fout;
       }
     }
-    if (laatste) throw laatste;
+    if (geweigerd && !nietGevonden) throw geweigerd;
     return { gevonden: false } as const;
   };
-  const start = Date.now();
-  let opgehaald = 0;
-  let onbekend = 0;
-  let gestopt: string | null = null;
-  for (let i = 0; i < ids.length && !gestopt; i += NAMEN_TEGELIJK) {
-    if (Date.now() - start > NAMEN_TIJDSBUDGET_MS) {
-      gestopt = "tijdsbudget op";
-      break;
-    }
-    const uitkomsten = await Promise.allSettled(ids.slice(i, i + NAMEN_TEGELIJK).map(async (relatieId) => ({ relatieId, uitkomst: await naamVan(relatieId) })));
-    const namen = uitkomsten.flatMap((u) => (u.status === "fulfilled" ? [{ relatieId: u.value.relatieId, naam: u.value.uitkomst.gevonden ? u.value.uitkomst.naam : null }] : []));
-    await metTenant(db, tenant.id, (tx) => zetBezichtigerNamen(tx, tenant.id, namen));
-    opgehaald += namen.length;
-    onbekend += uitkomsten.filter((u) => u.status === "fulfilled" && !u.value.uitkomst.gevonden).length;
-    const mislukt = uitkomsten.find((u) => u.status === "rejected");
-    if (mislukt) gestopt = mislukt.reason instanceof RealworksFout ? `Realworks gaf status ${mislukt.reason.status}` : "onverwachte fout";
-  }
-  console.log(`bezichtigers: ${opgehaald} van ${ids.length} namen opgehaald (${onbekend} relaties niet meer in Realworks)${gestopt ? `; gestopt: ${gestopt}, de rest volgt bij de volgende run` : ""}`);
-  return { opgehaald, open: ids.length - opgehaald };
+  const r = await haalNamenOp(ids, { haalNaam, bewaar: (namen) => metTenant(db, tenant.id, (tx) => zetBezichtigerNamen(tx, tenant.id, namen)) });
+  console.log(
+    `bezichtigers: ${r.opgehaald} van ${ids.length} namen opgehaald; ${r.onbekend} relaties niet in Realworks, ${r.geweigerd} geweigerd, ${r.open} nog open` +
+      (r.gestopt ? `; gestopt: ${r.gestopt}` : ""),
+  );
+  return { opgehaald: r.opgehaald, open: r.open };
 }
 
 type SyncBericht = { tenantId: string; syncId: string };
