@@ -2,22 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, PenLine, Settings } from "lucide-react";
+import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, PenLine, Settings, Users } from "lucide-react";
 
 const items = [
   { href: "/", label: "Overzicht", icoon: LayoutDashboard },
   { href: "/verkoop", label: "Verkoop en omzet", icoon: ChartColumn },
   { href: "/waardebepalingen", label: "Waardebepalingen", icoon: ClipboardCheck },
   { href: "/woningen", label: "Woningen in verkoop", icoon: Home },
+  { href: "/leads", label: "Leads", icoon: Users, alleenLeads: true },
   { href: "/instellingen/doelen", label: "Doelstellingen", icoon: Settings, alleenBeheerder: true },
   { href: "/instellingen/schrijfprofiel", label: "Schrijfprofiel", icoon: PenLine, alleenBeheerder: true, alleenIntake: true },
 ];
 
-export function Navigatie({ beheerder, intake }: { beheerder: boolean; intake: boolean }) {
+export function Navigatie({ beheerder, intake, leads }: { beheerder: boolean; intake: boolean; leads: boolean }) {
   const pad = usePathname();
   return (
     <nav aria-label="Hoofdmenu" className="flex gap-1 overflow-x-auto px-3 py-2 md:flex-col md:overflow-visible md:px-3 md:py-4">
-      {items.filter((item) => (beheerder || !item.alleenBeheerder) && (intake || !item.alleenIntake)).map(({ href, label, icoon: Icoon }) => {
+      {items.filter((item) => (beheerder || !item.alleenBeheerder) && (intake || !item.alleenIntake) && (leads || !item.alleenLeads)).map(({ href, label, icoon: Icoon }) => {
         const actief = href === "/" ? pad === "/" : pad.startsWith(href);
         return (
           <Link
