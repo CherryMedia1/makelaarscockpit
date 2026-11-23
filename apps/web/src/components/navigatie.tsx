@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, PenLine, Settings, Users } from "lucide-react";
+import { ChartColumn, ClipboardCheck, Home, LayoutDashboard, ListOrdered, PenLine, Settings, Users } from "lucide-react";
 
 const items = [
   { href: "/", label: "Overzicht", icoon: LayoutDashboard },
@@ -11,6 +11,7 @@ const items = [
   { href: "/woningen", label: "Woningen in verkoop", icoon: Home },
   { href: "/leads", label: "Leads", icoon: Users, alleenLeads: true },
   { href: "/instellingen/doelen", label: "Doelstellingen", icoon: Settings, alleenBeheerder: true },
+  { href: "/instellingen/pijplijn", label: "Pijplijn", icoon: ListOrdered, alleenBeheerder: true, alleenLeads: true },
   { href: "/instellingen/schrijfprofiel", label: "Schrijfprofiel", icoon: PenLine, alleenBeheerder: true, alleenIntake: true },
 ];
 
