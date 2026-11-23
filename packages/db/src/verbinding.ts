@@ -50,6 +50,17 @@ export async function zoekTenant(db: Db, sleutel: string): Promise<Tenant> {
   return rows[0] as Tenant;
 }
 
+/** Zoekt een tenant op id, voor jobs die de tenant uit een bericht krijgen. Null als hij niet bestaat. */
+export async function zoekTenantOpId(db: Db, id: string): Promise<Tenant | null> {
+  const { rows } = await db.query(
+    `select id, sleutel, naam, realworks_afdelingscode as afdelingscode, realworks_bedrijfscode as bedrijfscode,
+            to_char(koppeling_verkopen_vanaf, 'YYYY-MM-DD') as "koppelingVerkopenVanaf"
+       from tenant where id = $1`,
+    [id],
+  );
+  return (rows[0] as Tenant | undefined) ?? null;
+}
+
 /**
  * Voert `werk` uit in één transactie binnen de context van een tenant: als rol cockpit_app (zodat row-level security geldt)
  * en met app.tenant_id gezet. Queries filteren daarnaast zelf op tenant_id; RLS is het vangnet.
