@@ -17,7 +17,6 @@ const STANDAARD_RIJEN = 25;
 const PERIODES = [
   { waarde: "30", label: "Laatste 30 dagen" },
   { waarde: "90", label: "Laatste 90 dagen" },
-  { waarde: "365", label: "Laatste 12 maanden" },
 ] as const;
 
 async function laad() {
@@ -92,7 +91,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
     <>
       <PaginaKop
         titel="Leads uit bezichtigingen"
-        toelichting="Iedereen met een bezichtiging in de agenda van Realworks, één regel per relatie. Dit overzicht is voor gebruik binnen het kantoor."
+        toelichting="Iedereen met een bezichtiging in de laatste zes maanden of een geplande bezichtiging, één regel per relatie. Dit overzicht is voor gebruik binnen het kantoor."
       />
 
       {d.isVoorbeeld && (
@@ -102,7 +101,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiTegel label="Leads" waarde={aantal(cijfers.leads)} toelichting="Relaties met minstens één bezichtiging." />
+        <KpiTegel label="Leads" waarde={aantal(cijfers.leads)} toelichting="Relaties met een bezichtiging in de laatste zes maanden." />
         <KpiTegel label="Meerdere bezichtigingen" waarde={aantal(cijfers.meerdere)} toelichting="Relaties die vaker zijn komen kijken." />
         <KpiTegel label="Bezichtigingen, 30 dagen" waarde={aantal(cijfers.bezichtigingenLaatste30Dagen)} toelichting="Geweest in de laatste 30 dagen." />
         <KpiTegel label="Gepland" waarde={aantal(cijfers.komend)} toelichting="Bezichtigingen die nog komen." />
@@ -113,7 +112,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
         <label className="flex flex-col gap-1.5 text-label">
           Periode
           <Keuze name="periode" defaultValue={periode} className="min-w-44">
-            <option value="">Alles</option>
+            <option value="">Laatste 6 maanden</option>
             {PERIODES.map((p) => (
               <option key={p.waarde} value={p.waarde}>{p.label}</option>
             ))}
