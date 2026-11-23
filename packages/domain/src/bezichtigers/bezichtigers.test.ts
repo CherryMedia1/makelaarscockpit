@@ -13,7 +13,7 @@ const agendapunt = (over: Partial<AgendapuntGegevens> = {}): AgendapuntGegevens 
 
 let teller = 0;
 const regel = (over: Partial<BezichtigingRegel> = {}): BezichtigingRegel => ({
-  id: `b-${(teller += 1)}`, bezichtigerId: "r-1", naam: "Test Persoon", agendatype: "1e bezichtiging", status: "Definitief", tijdstip: "2026-11-10 14:00",
+  id: `b-${(teller += 1)}`, bezichtigerId: "r-1", naam: "Test Persoon", naamGezocht: true, agendatype: "1e bezichtiging", status: "Definitief", tijdstip: "2026-11-10 14:00",
   projectcode: "P-1", woning: "Proefstraat 1, Testdorp", makelaar: "Makelaar A", ...over,
 });
 
@@ -85,6 +85,11 @@ describe("groepeerLeads", () => {
     expect(eerste).toMatchObject({ bezichtigerId: "r-1", naam: "Test Persoon", aantal: 2, aantalWoningen: 2, eerste: "2026-10-01 10:00", laatste: "2026-11-10 14:00", komende: null });
     expect(eerste.makelaars).toEqual(["Makelaar B", "Makelaar A"]);
     expect(eerste.bezichtigingen.map((b) => b.tijdstip)).toEqual(["2026-11-10 14:00", "2026-10-01 10:00"]);
+  });
+
+  it("onthoudt of een ontbrekende naam al is opgezocht", () => {
+    expect(groepeerLeads([regel({ naam: null, naamGezocht: false })], VANDAAG)[0]).toMatchObject({ naam: null, naamGezocht: false });
+    expect(groepeerLeads([regel({ naam: null, naamGezocht: true })], VANDAAG)[0]).toMatchObject({ naam: null, naamGezocht: true });
   });
 
   it("sorteert op de meest recente bezichtiging, nieuwste eerst", () => {

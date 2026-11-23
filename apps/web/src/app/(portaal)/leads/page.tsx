@@ -252,7 +252,7 @@ function LeadRij({ lead }: { lead: Lead }) {
   const nieuwste = lead.bezichtigingen[0]!;
   return (
     <tr className="border-t border-border align-top transition-colors duration-150 hover:bg-primary-subtle/50">
-      <td className="px-6 py-3 text-label">{lead.naam ?? <span className="font-normal text-text-muted">Naam nog niet opgehaald</span>}</td>
+      <td className="px-6 py-3 text-label">{lead.naam ?? <span className="font-normal text-text-muted">{lead.naamGezocht ? "Naam onbekend in Realworks" : "Naam nog niet opgehaald"}</span>}</td>
       <td className="px-3 py-3">
         {lead.aantal === 1 ? (
           <span className="inline-flex flex-wrap items-center gap-2">

@@ -15,6 +15,8 @@ export class RealworksFout extends Error {
   constructor(
     readonly status: number,
     readonly pad: string,
+    /** Bij een 429: hoeveel seconden Realworks vraagt te wachten (Retry-After), als het dat meldt. */
+    readonly wachtSeconden?: number,
   ) {
     super(`Realworks gaf status ${status} op ${pad}`);
     this.name = "RealworksFout";
@@ -174,6 +176,9 @@ export async function haalRelatieNaam(opties: RealworksOpties, relatieId: number
   });
   if (antwoord.status === 404) return { gevonden: false };
   // Het pad in de fout bevat geen relatie-id: dat hoort niet in logs van een mislukte run.
-  if (!antwoord.ok) throw new RealworksFout(antwoord.status, "/relaties/v1/{relatieId}");
+  if (!antwoord.ok) {
+    const wacht = Number.parseInt(antwoord.headers.get("retry-after") ?? "", 10);
+    throw new RealworksFout(antwoord.status, "/relaties/v1/{relatieId}", Number.isFinite(wacht) && wacht > 0 ? Math.min(wacht, 60) : undefined);
+  }
   return { gevonden: true, naam: naarRelatieNaam(await antwoord.json()) };
 }
