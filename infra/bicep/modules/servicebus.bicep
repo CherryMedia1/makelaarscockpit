@@ -1,4 +1,4 @@
-// Service Bus (Standard) met topics realworks-events, workflow-commands en document-jobs, queues intake-verwerking en intake-tekst; de managed identity krijgt Data Owner
+// Service Bus (Standard) met topics realworks-events, workflow-commands en document-jobs, queues intake-verwerking, intake-tekst en bezichtigers-sync; de managed identity krijgt Data Owner
 param env string
 
 @description('Korte regiocode in alle resourcenamen, bv. neu (North Europe).')
@@ -49,6 +49,19 @@ resource intakeQueue 'Microsoft.ServiceBus/namespaces/queues@2026-01-01' = {
     lockDuration: 'PT5M'
     maxDeliveryCount: 5
     defaultMessageTimeToLive: 'P14D'
+    deadLetteringOnMessageExpiration: true
+  }
+}
+
+// Queue voor synchroniseren op verzoek vanuit het portaal (ADR-019, issue #51); berichten bevatten alleen id's.
+// Een verzoek dat een uur blijft liggen, is niet meer wat de medewerker wilde.
+resource bezichtigersSyncQueue 'Microsoft.ServiceBus/namespaces/queues@2026-01-01' = {
+  parent: serviceBus
+  name: 'bezichtigers-sync'
+  properties: {
+    lockDuration: 'PT5M'
+    maxDeliveryCount: 5
+    defaultMessageTimeToLive: 'PT1H'
     deadLetteringOnMessageExpiration: true
   }
 }

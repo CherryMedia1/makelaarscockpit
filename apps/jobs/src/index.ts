@@ -1,4 +1,5 @@
 // Jobs die in Azure als Container Apps-job draaien (ADR-008). Gebruik: node jobs.cjs <commando>
+import { syncBezichtigers } from "./bezichtigers";
 import { gebruikersBijwerken } from "./gebruikers-bijwerken";
 import { importVerkooplijst } from "./import-verkooplijst";
 import { importWaardebepalingen } from "./import-waardebepalingen";
@@ -15,6 +16,7 @@ const commandos: Record<string, () => Promise<void>> = {
   "gebruikers-bijwerken": gebruikersBijwerken,
   "verwerk-intake": verwerkIntake,
   "schrijf-woningtekst": schrijfWoningteksten,
+  "sync-bezichtigers": syncBezichtigers,
 };
 
 async function main(): Promise<void> {

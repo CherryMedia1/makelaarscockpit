@@ -2,24 +2,22 @@
 // objecten vast als verkoopregels (ADR-010). Realworks toont een woning alleen tot die in het archief gaat, dus deze job
 // draait dagelijks. Ruwe antwoorden gaan naar de blob-container raw-realworks; in de log staan alleen aantallen en statussen.
 import {
-  WONING_AGENDATYPES, bezichtigersZonderNaam, koppelGewonnen, leesBekendePlaatsen, leesMakelaarCodes, maakDb, metTenant, moduleAan, telSpiegel, upsertKoppelingVerkopen,
+  WONING_AGENDATYPES, koppelGewonnen, leesBekendePlaatsen, leesMakelaarCodes, maakDb, metTenant, moduleAan, telSpiegel, upsertKoppelingVerkopen,
   upsertMedewerkers, upsertObjecten, upsertWaardebepalingen, vervangAgendapunten, vervangBezichtigingen, verwijderVervallenKoppelingVerkopen, werkWoningenBij,
-  zetBezichtigerNamen, zoekTenant, type Tenant,
+  zoekTenant,
 } from "@makelaarscockpit/db";
 import {
   bezichtigingenVanaf, naarBezichtiging, naarWaardebepaling, objectNaarVerkoop,
   type AgendapuntGegevens, type BezichtigingUitRealworks, type ObjectGegevens, type VerkoopUitRealworks, type WaardebepalingUitRealworks,
 } from "@makelaarscockpit/domain";
-import { RealworksFout, haalAgendapunten, haalMedewerkers, haalRelatieNaam, haalWonenObjecten, type RealworksApi, type RealworksOpties } from "@makelaarscockpit/realworks";
-import { leesSecret, omgeving, schrijfBlob, verwijderBlobsMetPrefix } from "./azure";
+import { haalAgendapunten, haalMedewerkers, haalWonenObjecten, type RealworksOpties } from "@makelaarscockpit/realworks";
+import { omgeving, schrijfBlob, verwijderBlobsMetPrefix } from "./azure";
+import { bezichtigerNamenOphalen, realworksOpties } from "./bezichtigers";
 import { schoonIntakeOp } from "./intake/opschonen";
 
 export async function syncRealworks(): Promise<void> {
   const tenantSleutel = omgeving("TENANT_SLEUTEL");
-  const tokens = new Map<RealworksApi, Promise<string>>();
-  const opties: RealworksOpties = {
-    token: (api) => tokens.get(api) ?? tokens.set(api, leesSecret(`tenant-${tenantSleutel}-realworks-token-${api}`)).get(api)!,
-  };
+  const opties = realworksOpties(tenantSleutel);
   const nu = new Date().toISOString();
   const map = `${tenantSleutel}/${nu.slice(0, 10)}/${nu.slice(11, 19).replaceAll(":", "")}`;
 
@@ -140,55 +138,4 @@ async function agendaSpiegelen(
     const leads = await metTenant(db, tenantId, (tx) => vervangBezichtigingen(tx, tenantId, bezichtigingen));
     console.log(`bezichtigers: ${leads.bezichtigingen} bezichtigingen van ${leads.bezichtigers} bezichtigers; ${leads.verwijderd} verdwenen bezichtigingen verwijderd`);
   }
-}
-
-const NAMEN_TEGELIJK = 5;
-const NAMEN_TIJDSBUDGET_MS = 5 * 60 * 1000;
-
-/**
- * Haalt de naam op van bezichtigers die er nog geen hebben (ADR-019), een paar tegelijk en binnen een tijdsbudget; wat
- * overblijft, volgt bij de volgende run. In de log staan alleen aantallen en een HTTP-status, nooit een naam of relatie-id.
- */
-async function bezichtigerNamenOphalen(db: ReturnType<typeof maakDb>, tenant: Tenant, opties: RealworksOpties): Promise<void> {
-  const ids = await metTenant(db, tenant.id, (tx) => bezichtigersZonderNaam(tx, tenant.id, 10_000));
-  let codes = [tenant.bedrijfscode, tenant.afdelingscode].filter((c): c is string => Boolean(c));
-  if (ids.length === 0 || codes.length === 0) {
-    console.log(`bezichtigers: ${ids.length} namen op te halen${codes.length === 0 ? " (tenant zonder bedrijfscode, overgeslagen)" : ""}`);
-    return;
-  }
-  // Een verkeerde code geeft 400 of 404. Daarom proberen we bij zo'n antwoord ook de andere code; de code die werkt, komt vooraan.
-  const naamVan = async (relatieId: number) => {
-    let laatste: RealworksFout | null = null;
-    for (const code of [...codes]) {
-      try {
-        const uitkomst = await haalRelatieNaam(opties, relatieId, code);
-        if (!uitkomst.gevonden) continue;
-        if (codes[0] !== code) codes = [code, ...codes.filter((c) => c !== code)];
-        return uitkomst;
-      } catch (fout) {
-        if (!(fout instanceof RealworksFout) || fout.status !== 400) throw fout;
-        laatste = fout;
-      }
-    }
-    if (laatste) throw laatste;
-    return { gevonden: false } as const;
-  };
-  const start = Date.now();
-  let opgehaald = 0;
-  let onbekend = 0;
-  let gestopt: string | null = null;
-  for (let i = 0; i < ids.length && !gestopt; i += NAMEN_TEGELIJK) {
-    if (Date.now() - start > NAMEN_TIJDSBUDGET_MS) {
-      gestopt = "tijdsbudget op";
-      break;
-    }
-    const uitkomsten = await Promise.allSettled(ids.slice(i, i + NAMEN_TEGELIJK).map(async (relatieId) => ({ relatieId, uitkomst: await naamVan(relatieId) })));
-    const namen = uitkomsten.flatMap((u) => (u.status === "fulfilled" ? [{ relatieId: u.value.relatieId, naam: u.value.uitkomst.gevonden ? u.value.uitkomst.naam : null }] : []));
-    await metTenant(db, tenant.id, (tx) => zetBezichtigerNamen(tx, tenant.id, namen));
-    opgehaald += namen.length;
-    onbekend += uitkomsten.filter((u) => u.status === "fulfilled" && !u.value.uitkomst.gevonden).length;
-    const mislukt = uitkomsten.find((u) => u.status === "rejected");
-    if (mislukt) gestopt = mislukt.reason instanceof RealworksFout ? `Realworks gaf status ${mislukt.reason.status}` : "onverwachte fout";
-  }
-  console.log(`bezichtigers: ${opgehaald} van ${ids.length} namen opgehaald (${onbekend} relaties niet meer in Realworks)${gestopt ? `; gestopt: ${gestopt}, de rest volgt bij de volgende run` : ""}`);
 }

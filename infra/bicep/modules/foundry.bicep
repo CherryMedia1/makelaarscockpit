@@ -91,12 +91,16 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   }
 }
 
-// Deployments binnen één account één voor één aanmaken; parallel geeft conflicten.
+// Deployments binnen één account één voor één aanmaken; parallel geeft conflicten. Ook het project is een bewerking op
+// het account: zonder dependsOn lopen project en eerste deployment tegelijk en faalt de deploy met RequestConflict.
 @batchSize(1)
 resource modelDeployments 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = [
   for d in deployments: {
     parent: foundry
     name: d.naam
+    dependsOn: [
+      project
+    ]
     sku: {
       name: 'DataZoneStandard'
       capacity: d.capaciteit
