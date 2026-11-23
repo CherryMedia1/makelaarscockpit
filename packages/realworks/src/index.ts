@@ -152,3 +152,28 @@ export async function* haalAgendapunten(opties: RealworksOpties, afdelingscode: 
     yield { agendapunten: pagina.resultaten.map(naarAgendapunt), ruw: pagina.resultaten, totaal: pagina.paginering?.totaalAantal ?? null };
   }
 }
+
+/** De naam van een relatie voor het leadoverzicht (ADR-019): een persoon met roepnaam of voornamen, anders de bedrijfsnaam. */
+export function naarRelatieNaam(ruw: unknown): string | null {
+  const r = object(ruw);
+  const voornaam = tekst(r.roepnaam) ?? tekst(object(r.overige).voornamen) ?? tekst(r.initialen);
+  const persoon = tekst(r.achternaam) ? [voornaam, tekst(r.tussenvoegsel), tekst(r.achternaam)].filter(Boolean).join(" ") : null;
+  return persoon ?? tekst(object(object(r.adresgegevens).bedrijfsadres).bedrijfsnaam) ?? voornaam;
+}
+
+export type RelatieNaam = { gevonden: true; naam: string | null } | { gevonden: false };
+
+/**
+ * Haalt alleen de naam van één relatie op; de rest van het antwoord (adres, e-mail, telefoon) wordt niet doorgegeven.
+ * Een 404 betekent dat de relatie niet (meer) bestaat; andere fouten, ook een 429, gaan als RealworksFout naar de aanroeper.
+ */
+export async function haalRelatieNaam(opties: RealworksOpties, relatieId: number, bedrijfscode: string): Promise<RelatieNaam> {
+  const pad = `/relaties/v1/${relatieId}`;
+  const antwoord = await (opties.fetch ?? fetch)(`${opties.basisUrl ?? BASIS}${pad}?bedrijfscode=${encodeURIComponent(bedrijfscode)}`, {
+    headers: { Authorization: `rwauth ${await opties.token("relaties")}`, Accept: "application/json" },
+  });
+  if (antwoord.status === 404) return { gevonden: false };
+  // Het pad in de fout bevat geen relatie-id: dat hoort niet in logs van een mislukte run.
+  if (!antwoord.ok) throw new RealworksFout(antwoord.status, "/relaties/v1/{relatieId}");
+  return { gevonden: true, naam: naarRelatieNaam(await antwoord.json()) };
+}

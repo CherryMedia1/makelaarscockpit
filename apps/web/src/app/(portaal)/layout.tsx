@@ -1,6 +1,7 @@
 import { magKantoorBeheren } from "@makelaarscockpit/domain";
 import { AppSchil } from "@/components/app-schil";
 import { intakeModuleAan } from "@/lib/intake";
+import { bezichtigersModuleAan } from "@/lib/leads";
 import { vereisSessie } from "@/lib/inlog/sessie";
 
 export default async function PortaalLayout({ children }: { children: React.ReactNode }) {
@@ -9,8 +10,10 @@ export default async function PortaalLayout({ children }: { children: React.Reac
   const beheerder = magKantoorBeheren(sessie.rol);
   // De module alleen opvragen als het menu-item er voor deze gebruiker toe doet.
   const intake = beheerder && (await intakeModuleAan());
+  // Het leadoverzicht is voor elke medewerker van een kantoor met de module (ADR-019).
+  const leads = await bezichtigersModuleAan();
   return (
-    <AppSchil kantoor={sessie.kantoornaam} gebruiker={sessie.naam} beheerder={beheerder} intake={intake}>
+    <AppSchil kantoor={sessie.kantoornaam} gebruiker={sessie.naam} beheerder={beheerder} intake={intake} leads={leads}>
       {children}
     </AppSchil>
   );
