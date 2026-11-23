@@ -3,12 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { ArrowLeft, Save } from "lucide-react";
-import { FASE_SOORT_LABEL, MAX_LEAD_NOTITIE, type FaseSoort } from "@makelaarscockpit/domain";
+import { FASE_SOORT_LABEL, MAX_LEAD_NOTITIE, PLATFORMS, PLATFORM_LABEL, type FaseSoort } from "@makelaarscockpit/domain";
 import { Kaart, Label, Melding, PaginaKop, knopKlassen } from "@/components/basis";
-import { Keuze, Tekstvak } from "@/components/formulier";
+import { Invoer, Keuze, Tekstvak } from "@/components/formulier";
 import { datum } from "@/lib/format";
 import { haalLeadKaart } from "@/lib/leads";
-import { leadOpslaan, leadUitPijplijn } from "./acties";
+import { leadLinksOpslaan, leadOpslaan, leadUitPijplijn } from "./acties";
 
 export const metadata: Metadata = { title: "Lead" };
 
@@ -19,6 +19,9 @@ const FOUTEN: Record<string, string> = {
   eigenaar: "Kies een medewerker van het kantoor als eigenaar.",
   notitie: `De notitie is hooguit ${MAX_LEAD_NOTITIE} tekens.`,
   onbekend: "Deze lead bestaat niet meer.",
+  "link-linkedin": "De LinkedIn-link moet beginnen met https:// en naar linkedin.com wijzen.",
+  "link-facebook": "De Facebook-link moet beginnen met https:// en naar facebook.com wijzen.",
+  "link-instagram": "De Instagram-link moet beginnen met https:// en naar instagram.com wijzen.",
 };
 
 const moment = (d: Date) => new Intl.DateTimeFormat("nl-NL", { timeZone: "Europe/Amsterdam", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);
@@ -102,8 +105,43 @@ export default async function LeadKaartPagina({ params, searchParams }: { params
           )}
         </Kaart>
 
-        <Kaart titel="Contactgegevens" toelichting="E-mail, telefoon en links naar social media.">
-          <p className="text-body-sm text-text-muted">De contactgegevens uit Realworks komen hier in een volgende stap te staan.</p>
+        <Kaart titel="Contactgegevens" toelichting="E-mail, telefoon en website komen uit Realworks. Links naar social media ook, als ze daar staan; anders vul je ze zelf in.">
+          {!lead ? (
+            <p className="text-body-sm text-text-muted">De contactgegevens worden opgehaald zodra deze bezichtiger in de pijplijn staat.</p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {lead.contactOpgehaaldOp ? (
+                <dl className="grid grid-cols-[7rem_1fr] gap-x-4 gap-y-2 text-body-sm">
+                  <dt className="text-text-muted">E-mail</dt>
+                  <dd>{lead.email ? <a href={`mailto:${lead.email}`} className="text-primary hover:underline">{lead.email}</a> : <span className="text-text-muted">Niet in Realworks</span>}</dd>
+                  <dt className="text-text-muted">Telefoon</dt>
+                  <dd>{lead.telefoon ? <a href={`tel:${lead.telefoon.replace(/[^0-9+]/g, "")}`} className="text-primary hover:underline">{lead.telefoon}</a> : <span className="text-text-muted">Niet in Realworks</span>}</dd>
+                  {lead.website && /^https?:\/\//i.test(lead.website) && (
+                    <>
+                      <dt className="text-text-muted">Website</dt>
+                      <dd><a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{lead.website}</a></dd>
+                    </>
+                  )}
+                  <dt className="text-text-muted">Bijgewerkt</dt>
+                  <dd className="text-text-muted">{moment(lead.contactOpgehaaldOp)}</dd>
+                </dl>
+              ) : (
+                <p className="text-body-sm text-text-muted">De contactgegevens worden opgehaald uit Realworks. Ververs de pagina over een minuut; anders volgen ze bij de eerstvolgende synchronisatie.</p>
+              )}
+              <form action={leadLinksOpslaan.bind(null, kaart.bezichtigerId)} className="flex flex-col gap-3 border-t border-border pt-4">
+                {PLATFORMS.map((p) => (
+                  <label key={p} className="flex flex-col gap-1.5 text-label">
+                    <span className="flex items-center justify-between gap-2">
+                      {PLATFORM_LABEL[p]}
+                      {lead.links[p] && <a href={lead.links[p]} target="_blank" rel="noopener noreferrer" className="text-caption font-normal text-primary hover:underline">Openen</a>}
+                    </span>
+                    <Invoer name={p} type="url" defaultValue={lead.links[p] ?? ""} maxLength={300} placeholder={`https://www.${p}.com/…`} />
+                  </label>
+                ))}
+                <button type="submit" className={`${knopKlassen("secundair")} w-fit`}>Links opslaan</button>
+              </form>
+            </div>
+          )}
         </Kaart>
       </div>
 

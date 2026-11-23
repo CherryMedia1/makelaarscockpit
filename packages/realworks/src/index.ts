@@ -1,6 +1,6 @@
 // Realworks API-client: alle Realworks-calls lopen via dit package (harde regel in CLAUDE.md).
 // Paden en gedrag volgens ADR-005. Foutmeldingen bevatten nooit de inhoud van een antwoord of een token.
-import type { AgendapuntGegevens, MedewerkerGegevens, ObjectGegevens } from "@makelaarscockpit/domain";
+import { platformVanUrl, type AgendapuntGegevens, type LeadLinks, type MedewerkerGegevens, type ObjectGegevens, type RelatieContact } from "@makelaarscockpit/domain";
 
 export type RealworksApi = "wonen" | "relaties" | "taken" | "agenda" | "makelaars";
 
@@ -165,20 +165,61 @@ export function naarRelatieNaam(ruw: unknown): string | null {
 
 export type RelatieNaam = { gevonden: true; naam: string | null } | { gevonden: false };
 
+/** Haalt één relatie op; null bij een 404. Het pad in een fout bevat geen relatie-id: dat hoort niet in logs. */
+async function haalRelatie(opties: RealworksOpties, relatieId: number, bedrijfscode: string): Promise<unknown | null> {
+  const pad = `/relaties/v1/${relatieId}`;
+  const antwoord = await (opties.fetch ?? fetch)(`${opties.basisUrl ?? BASIS}${pad}?bedrijfscode=${encodeURIComponent(bedrijfscode)}`, {
+    headers: { Authorization: `rwauth ${await opties.token("relaties")}`, Accept: "application/json" },
+  });
+  if (antwoord.status === 404) return null;
+  if (!antwoord.ok) {
+    const wacht = Number.parseInt(antwoord.headers.get("retry-after") ?? "", 10);
+    throw new RealworksFout(antwoord.status, "/relaties/v1/{relatieId}", Number.isFinite(wacht) && wacht > 0 ? Math.min(wacht, 60) : undefined);
+  }
+  return antwoord.json();
+}
+
 /**
  * Haalt alleen de naam van één relatie op; de rest van het antwoord (adres, e-mail, telefoon) wordt niet doorgegeven.
  * Een 404 betekent dat de relatie niet (meer) bestaat; andere fouten, ook een 429, gaan als RealworksFout naar de aanroeper.
  */
 export async function haalRelatieNaam(opties: RealworksOpties, relatieId: number, bedrijfscode: string): Promise<RelatieNaam> {
-  const pad = `/relaties/v1/${relatieId}`;
-  const antwoord = await (opties.fetch ?? fetch)(`${opties.basisUrl ?? BASIS}${pad}?bedrijfscode=${encodeURIComponent(bedrijfscode)}`, {
-    headers: { Authorization: `rwauth ${await opties.token("relaties")}`, Accept: "application/json" },
-  });
-  if (antwoord.status === 404) return { gevonden: false };
-  // Het pad in de fout bevat geen relatie-id: dat hoort niet in logs van een mislukte run.
-  if (!antwoord.ok) {
-    const wacht = Number.parseInt(antwoord.headers.get("retry-after") ?? "", 10);
-    throw new RealworksFout(antwoord.status, "/relaties/v1/{relatieId}", Number.isFinite(wacht) && wacht > 0 ? Math.min(wacht, 60) : undefined);
+  const ruw = await haalRelatie(opties, relatieId, bedrijfscode);
+  return ruw === null ? { gevonden: false } : { gevonden: true, naam: naarRelatieNaam(ruw) };
+}
+
+/** Alle tekstwaarden in een antwoord, tot een beperkte diepte; om links naar social media te vinden ongeacht de veldnaam. */
+function* teksten(w: unknown, diepte = 0): Generator<string> {
+  if (typeof w === "string") yield w.trim();
+  else if (w !== null && typeof w === "object" && diepte < 4) for (const v of Array.isArray(w) ? w : Object.values(w)) yield* teksten(v, diepte + 1);
+}
+
+/**
+ * De contactgegevens van een relatie voor een lead in de pijplijn (ADR-020): het eerste e-mailadres, bij voorkeur een
+ * mobiel nummer, de website, en links naar LinkedIn, Facebook of Instagram als de relatie die ergens heeft staan.
+ */
+export function naarRelatieContact(ruw: unknown): RelatieContact {
+  const r = object(ruw);
+  const emails = (Array.isArray(r.emailadressen) ? r.emailadressen : []).map((e) => tekst(object(e).email)).filter((e): e is string => e !== null);
+  const nummers = (Array.isArray(r.telefoonnummers) ? r.telefoonnummers : []).map(object).filter((t) => tekst(t.nummer) !== null);
+  const mobiel = nummers.find((t) => /mobiel|mobile/i.test(tekst(t.type) ?? ""));
+  const links: LeadLinks = { linkedin: null, facebook: null, instagram: null };
+  for (const t of teksten(ruw)) {
+    const platform = platformVanUrl(t);
+    if (platform) links[platform] ??= t;
   }
-  return { gevonden: true, naam: naarRelatieNaam(await antwoord.json()) };
+  const homepage = tekst(object(r.overige).homepage);
+  return {
+    email: emails[0] ?? null,
+    telefoon: tekst((mobiel ?? nummers[0])?.nummer),
+    // Een homepage die naar een social-mediaprofiel wijst, staat al bij de links.
+    website: homepage && !platformVanUrl(homepage) ? homepage : null,
+    links,
+  };
+}
+
+/** Haalt de contactgegevens van één relatie op; `gevonden: false` bij een 404. Fouten als bij haalRelatieNaam. */
+export async function haalRelatieContact(opties: RealworksOpties, relatieId: number, bedrijfscode: string): Promise<{ gevonden: true; contact: RelatieContact } | { gevonden: false }> {
+  const ruw = await haalRelatie(opties, relatieId, bedrijfscode);
+  return ruw === null ? { gevonden: false } : { gevonden: true, contact: naarRelatieContact(ruw) };
 }
