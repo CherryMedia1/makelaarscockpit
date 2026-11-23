@@ -1,6 +1,10 @@
 // Integratietest tegen een echte PostgreSQL met alle migraties; draait alleen met DB_INTEGRATIE=1 (zie intake.integratie.test.ts).
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { leesPijplijnFases, verwijderPijplijnFase, voegPijplijnFaseToe, wijzigPijplijnFase, zetPijplijnFaseActief, zetPijplijnVolgorde } from "./pijplijn";
+import { leesBezichtigingen, vervangBezichtigingen } from "./bezichtigers";
+import {
+  bewaarLead, leesLeadKaart, leesLeadStanden, leesPijplijnFases, verwijderLead, verwijderPijplijnFase, voegPijplijnFaseToe, wijzigPijplijnFase, zetPijplijnFaseActief,
+  zetPijplijnVolgorde,
+} from "./pijplijn";
 import { maakDb, metTenant, type Db } from "./verbinding";
 
 describe.skipIf(!process.env.DB_INTEGRATIE)("pijplijnfases in de database", () => {
@@ -17,7 +21,7 @@ describe.skipIf(!process.env.DB_INTEGRATIE)("pijplijnfases in de database", () =
 
   afterAll(async () => {
     for (const t of [a, b]) {
-      await db.query("delete from pijplijn_fase where tenant_id = $1", [t]);
+      for (const tabel of ["lead_historie", "lead", "bezichtiging", "bezichtiger", "pijplijn_fase", "medewerker", "gebruiker"]) await db.query(`delete from ${tabel} where tenant_id = $1`, [t]);
       await db.query("delete from tenant where id = $1", [t]);
     }
     await db.end();
@@ -53,8 +57,62 @@ describe.skipIf(!process.env.DB_INTEGRATIE)("pijplijnfases in de database", () =
   it("laat een ander kantoor niets wijzigen of verwijderen", async () => {
     const [fase] = await metTenant(db, a, (tx) => leesPijplijnFases(tx, a));
     expect(await metTenant(db, b, (tx) => wijzigPijplijnFase(tx, b, fase!.id, { naam: "Gekaapt", soort: "open" }))).toBe(false);
-    expect(await metTenant(db, b, (tx) => verwijderPijplijnFase(tx, b, fase!.id))).toBe(false);
-    expect(await metTenant(db, a, (tx) => verwijderPijplijnFase(tx, a, fase!.id))).toBe(true);
+    expect(await metTenant(db, b, (tx) => verwijderPijplijnFase(tx, b, fase!.id))).toBe("onbekend");
+    expect(await metTenant(db, a, (tx) => verwijderPijplijnFase(tx, a, fase!.id))).toBe("verwijderd");
     expect(await namen(a)).toEqual(["Eerste", "Verloren"]);
+  });
+
+  describe("leads", () => {
+    let gebruiker: string, medewerker: string, bezichtiger: string, eerste: string, verloren: string;
+    const bezichtiging = { realworksId: 1, relatieId: 5001, agendatype: "1e bezichtiging", status: "Definitief", tijdstip: "2026-11-10 14:00:00", projectcode: "P-1", projecttype: "WONEN", locatie: null, medewerkerRealworksId: null };
+
+    beforeAll(async () => {
+      await metTenant(db, a, async (tx) => {
+        gebruiker = (await tx.query("insert into gebruiker (tenant_id, email, naam, rol) values ($1, $2, 'Test Medewerker', 'medewerker') returning id", [a, `p${Date.now()}@voorbeeld.test`])).rows[0].id;
+        medewerker = (await tx.query("insert into medewerker (tenant_id, realworks_id, weergavenaam) values ($1, 900, 'Makelaar A') returning id", [a])).rows[0].id;
+        await vervangBezichtigingen(tx, a, [bezichtiging]);
+        bezichtiger = (await tx.query("select id from bezichtiger where tenant_id = $1", [a])).rows[0].id;
+        const fases = await leesPijplijnFases(tx, a);
+        eerste = fases.find((f) => f.naam === "Eerste")!.id;
+        verloren = fases.find((f) => f.naam === "Verloren")!.id;
+      });
+    });
+
+    it("toont een bezichtiger zonder lead als nog niet in de pijplijn", async () => {
+      expect(await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger))).toMatchObject({ bezichtigerId: bezichtiger, lead: null, historie: [] });
+      expect(await metTenant(db, a, (tx) => leesLeadStanden(tx, a))).toEqual([]);
+    });
+
+    it("zet een bezichtiger in de pijplijn en legt elke wijziging van fase vast", async () => {
+      expect(await metTenant(db, a, (tx) => bewaarLead(tx, a, bezichtiger, { faseId: eerste, eigenaarId: medewerker, notitie: "eerste contact" }, gebruiker))).toMatchObject({ faseGewijzigd: true });
+      // Alleen de notitie wijzigen is geen nieuwe regel in de historie.
+      expect(await metTenant(db, a, (tx) => bewaarLead(tx, a, bezichtiger, { faseId: eerste, eigenaarId: medewerker, notitie: "teruggebeld" }, gebruiker))).toMatchObject({ faseGewijzigd: false });
+      expect(await metTenant(db, a, (tx) => bewaarLead(tx, a, bezichtiger, { faseId: verloren, eigenaarId: null, notitie: null }, gebruiker))).toMatchObject({ faseGewijzigd: true });
+      const kaart = await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger));
+      expect(kaart!.lead).toMatchObject({ faseId: verloren, eigenaarId: null, notitie: null });
+      expect(kaart!.historie.map((h) => [h.van, h.naar, h.door])).toEqual([["Eerste", "Verloren", "Test Medewerker"], [null, "Eerste", "Test Medewerker"]]);
+      expect(await metTenant(db, a, (tx) => leesLeadStanden(tx, a))).toEqual([{ bezichtigerId: bezichtiger, faseId: verloren, fase: "Verloren", soort: "verloren", eigenaar: null }]);
+    });
+
+    it("laat een ander kantoor de lead niet zien of wijzigen", async () => {
+      expect(await metTenant(db, b, (tx) => leesLeadKaart(tx, b, bezichtiger))).toBeNull();
+      expect(await metTenant(db, b, (tx) => bewaarLead(tx, b, bezichtiger, { faseId: eerste, eigenaarId: null, notitie: null }, gebruiker))).toBeNull();
+      expect(await metTenant(db, b, (tx) => verwijderLead(tx, b, bezichtiger))).toBe(false);
+    });
+
+    it("verwijdert geen fase waar leads in zitten of zaten", async () => {
+      expect(await metTenant(db, a, (tx) => verwijderPijplijnFase(tx, a, verloren))).toBe("in-gebruik");
+      expect(await metTenant(db, a, (tx) => verwijderPijplijnFase(tx, a, eerste))).toBe("in-gebruik");
+    });
+
+    it("houdt een bezichtiger met een lead vast als zijn bezichtigingen verdwijnen, en laat hem daarna los", async () => {
+      await metTenant(db, a, (tx) => vervangBezichtigingen(tx, a, []));
+      expect(await metTenant(db, a, (tx) => leesBezichtigingen(tx, a))).toEqual([]);
+      expect(await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger))).toMatchObject({ lead: { faseId: verloren } });
+      expect(await metTenant(db, a, (tx) => verwijderLead(tx, a, bezichtiger))).toBe(true);
+      await metTenant(db, a, (tx) => vervangBezichtigingen(tx, a, []));
+      expect(await metTenant(db, a, (tx) => leesLeadKaart(tx, a, bezichtiger))).toBeNull();
+      expect(await metTenant(db, a, (tx) => verwijderPijplijnFase(tx, a, verloren))).toBe("verwijderd");
+    });
   });
 });

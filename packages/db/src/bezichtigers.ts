@@ -4,7 +4,8 @@ import type { Tx } from "./verbinding";
 
 /**
  * Vervangt de gespiegelde bezichtigingen door de stand van deze run. Idempotent op het Realworks-id; wat Realworks niet
- * meer levert, verdwijnt, en een bezichtiger zonder bezichtigingen ook (met zijn naam).
+ * meer levert, verdwijnt, en een bezichtiger zonder bezichtigingen ook (met zijn naam), tenzij hij als lead in de
+ * pijplijn staat (ADR-020).
  */
 export async function vervangBezichtigingen(tx: Tx, tenantId: string, lijst: readonly BezichtigingUitRealworks[]): Promise<{ bezichtigingen: number; bezichtigers: number; verwijderd: number }> {
   await tx.query(
@@ -30,7 +31,13 @@ export async function vervangBezichtigingen(tx: Tx, tenantId: string, lijst: rea
   );
   // now() is binnen één transactie constant: alles wat deze run niet heeft aangeraakt, is ouder.
   const weg = await tx.query("delete from bezichtiging where tenant_id = $1 and gesynchroniseerd_op < now()", [tenantId]);
-  await tx.query("delete from bezichtiger b where b.tenant_id = $1 and not exists (select 1 from bezichtiging g where g.tenant_id = $1 and g.bezichtiger_id = b.id)", [tenantId]);
+  await tx.query(
+    `delete from bezichtiger b
+      where b.tenant_id = $1
+        and not exists (select 1 from bezichtiging g where g.tenant_id = $1 and g.bezichtiger_id = b.id)
+        and not exists (select 1 from lead l where l.tenant_id = $1 and l.bezichtiger_id = b.id)`,
+    [tenantId],
+  );
   const stand = await tx.query(
     "select (select count(*)::int from bezichtiging where tenant_id = $1) as bezichtigingen, (select count(*)::int from bezichtiger where tenant_id = $1) as bezichtigers",
     [tenantId],
@@ -61,8 +68,8 @@ export async function zetBezichtigerNamen(tx: Tx, tenantId: string, namen: reado
   );
 }
 
-/** Alle bezichtigingen van de tenant met naam, woning en makelaar, voor het leadoverzicht. */
-export async function leesBezichtigingen(tx: Tx, tenantId: string): Promise<BezichtigingRegel[]> {
+/** Alle bezichtigingen van de tenant met naam, woning en makelaar, voor het leadoverzicht; of die van één bezichtiger. */
+export async function leesBezichtigingen(tx: Tx, tenantId: string, bezichtigerId?: string): Promise<BezichtigingRegel[]> {
   const { rows } = await tx.query(
     `select g.id, g.bezichtiger_id as "bezichtigerId", b.naam, b.naam_opgehaald_op is not null as "naamGezocht", g.agendatype, g.status, to_char(g.tijdstip, 'YYYY-MM-DD HH24:MI') as tijdstip, g.projectcode,
             coalesce(o.adres, nullif(regexp_replace(g.locatie, '^\\d{4}\\s?[A-Za-z]{2}\\s+', ''), '')) as woning,
@@ -74,9 +81,9 @@ export async function leesBezichtigingen(tx: Tx, tenantId: string): Promise<Bezi
            from object o where o.tenant_id = g.tenant_id and o.objectcode = g.projectcode limit 1
        ) o on true
        left join medewerker m on m.tenant_id = g.tenant_id and m.realworks_id = g.medewerker_realworks_id
-      where g.tenant_id = $1
+      where g.tenant_id = $1 and ($2::uuid is null or g.bezichtiger_id = $2)
       order by g.tijdstip desc`,
-    [tenantId],
+    [tenantId, bezichtigerId ?? null],
   );
   return rows as BezichtigingRegel[];
 }

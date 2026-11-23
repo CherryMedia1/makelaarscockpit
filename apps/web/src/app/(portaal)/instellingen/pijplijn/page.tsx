@@ -17,6 +17,7 @@ const FOUTEN: Record<string, string> = {
   "naam-bestaat": "Er is al een fase met deze naam.",
   soort: "Kies of de fase lopend, gewonnen of verloren is.",
   onbekend: "Deze fase bestaat niet meer.",
+  "in-gebruik": "Er zitten of zaten leads in deze fase. Je kunt haar uitzetten, niet verwijderen.",
   "niet-leeg": "Er staan al fases; de standaardfases zijn niet toegevoegd.",
 };
 

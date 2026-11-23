@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { ChevronLeft, ChevronRight, RefreshCw, Users } from "lucide-react";
-import { filterLeads, leadCijfers, type Lead } from "@makelaarscockpit/domain";
+import type { LeadStand } from "@makelaarscockpit/db";
+import { filterLeads, leadCijfers, type FaseSoort, type Lead } from "@makelaarscockpit/domain";
 import { Kaart, KpiTegel, Label, LegeStaat, Melding, PaginaKop, knopKlassen } from "@/components/basis";
 import { Keuze } from "@/components/formulier";
 import { HorizontaalScroller } from "@/components/horizontaal-scroller";
@@ -29,6 +30,10 @@ async function laad() {
   }
 }
 
+const FASE_STIJL: Record<FaseSoort, "info" | "succes" | "neutraal"> = { open: "info", gewonnen: "succes", verloren: "neutraal" };
+/** Filterwaarde voor bezichtigers zonder fase. */
+const GEEN_FASE = "geen";
+
 const SYNC_MELDING: Record<string, { titel: string; tekst: string; soort?: "fout" }> = {
   gestart: { titel: "Synchronisatie gestart", tekst: "De bezichtigingen worden opgehaald uit Realworks. Dat duurt een paar minuten; ververs daarna de pagina." },
   loopt: { titel: "Er loopt al een synchronisatie", tekst: "Wacht tot die klaar is en ververs dan de pagina." },
@@ -48,9 +53,9 @@ function dagenTerug(vandaag: string, dagen: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default async function Leads({ searchParams }: { searchParams: Promise<{ periode?: string; woning?: string; makelaar?: string; aantal?: string; rijen?: string; pagina?: string; sync?: string }> }) {
+export default async function Leads({ searchParams }: { searchParams: Promise<{ periode?: string; woning?: string; makelaar?: string; aantal?: string; fase?: string; rijen?: string; pagina?: string; sync?: string }> }) {
   await connection();
-  const { periode: periodeParam, woning = "", makelaar = "", aantal: aantalParam, rijen: rijenParam, pagina: paginaParam, sync: syncParam } = await searchParams;
+  const { periode: periodeParam, woning = "", makelaar = "", aantal: aantalParam, fase: faseParam = "", rijen: rijenParam, pagina: paginaParam, sync: syncParam } = await searchParams;
   const d = await laad();
   if (!d) {
     return (
@@ -74,17 +79,19 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
   const syncMelding = syncParam ? SYNC_MELDING[syncParam] : undefined;
   const periode = PERIODES.find((p) => p.waarde === periodeParam)?.waarde ?? "";
   const meerdere = aantalParam === "meerdere";
+  const standVan = new Map(d.standen.map((s) => [s.bezichtigerId, s]));
+  const fase = faseParam === GEEN_FASE || d.fases.some((f) => f.id === faseParam) ? faseParam : "";
   const lijst = filterLeads(d.leads, {
     ...(periode ? { vanaf: dagenTerug(d.vandaag, Number(periode)) } : {}),
     ...(woning ? { projectcode: woning } : {}),
     ...(makelaar ? { makelaar } : {}),
     alleenMeerdere: meerdere,
-  });
+  }).filter((l) => !fase || (fase === GEEN_FASE ? !standVan.has(l.bezichtigerId) : standVan.get(l.bezichtigerId)?.faseId === fase));
   const cijfers = leadCijfers(d.leads, d.vandaag);
   const alleBezichtigingen = d.leads.flatMap((l) => l.bezichtigingen);
   const woningen = [...new Map(alleBezichtigingen.flatMap((b) => (b.projectcode ? [[b.projectcode, b.woning ?? b.projectcode] as const] : []))).entries()].sort((a, b) => a[1].localeCompare(b[1], "nl"));
   const makelaars = [...new Set(alleBezichtigingen.map((b) => b.makelaar))].sort((a, b) => a.localeCompare(b, "nl"));
-  const gefilterd = periode || woning || makelaar || meerdere;
+  const gefilterd = periode || woning || makelaar || meerdere || fase;
 
   const rijen = RIJEN_OPTIES.find((n) => String(n) === rijenParam) ?? STANDAARD_RIJEN;
   const paginas = Math.max(1, Math.ceil(lijst.length / rijen));
@@ -92,7 +99,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
   const zichtbaar = lijst.slice((pagina - 1) * rijen, pagina * rijen);
   // Filters en aantal rijen blijven in de URL; lege waarden en de standaard laten we weg.
   const behoud: Record<string, string> = Object.fromEntries(
-    Object.entries({ periode, woning, makelaar, aantal: meerdere ? "meerdere" : "", rijen: rijen === STANDAARD_RIJEN ? "" : String(rijen) }).filter(([, w]) => w),
+    Object.entries({ periode, woning, makelaar, aantal: meerdere ? "meerdere" : "", fase, rijen: rijen === STANDAARD_RIJEN ? "" : String(rijen) }).filter(([, w]) => w),
   );
   const naarPagina = (p: number) => {
     const q = new URLSearchParams({ ...behoud, ...(p > 1 ? { pagina: String(p) } : {}) }).toString();
@@ -162,6 +169,18 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
             <option value="meerdere">Meerdere bezichtigingen</option>
           </Keuze>
         </label>
+        {d.fases.length > 0 && (
+          <label className="flex flex-col gap-1.5 text-label">
+            Fase
+            <Keuze name="fase" defaultValue={fase} className="min-w-48">
+              <option value="">Alle fases</option>
+              <option value={GEEN_FASE}>Nog niet in de pijplijn</option>
+              {d.fases.map((f) => (
+                <option key={f.id} value={f.id}>{f.naam}</option>
+              ))}
+            </Keuze>
+          </label>
+        )}
         <button type="submit" className={knopKlassen("secundair")}>Filter toepassen</button>
         {gefilterd && <Link href={behoud.rijen ? `/leads?rijen=${behoud.rijen}` : "/leads"} className={knopKlassen("ghost")}>Filters wissen</Link>}
       </form>
@@ -173,10 +192,11 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
       ) : (
         <Kaart>
           <HorizontaalScroller className="-m-6">
-            <table className="w-full min-w-[960px] border-collapse text-body-sm">
+            <table className="w-full min-w-[1080px] border-collapse text-body-sm">
               <thead>
                 <tr className="bg-surface-sunken text-left text-overline text-text-muted">
                   <th scope="col" className="px-6 py-3 font-semibold">Bezichtiger</th>
+                  <th scope="col" className="px-3 py-3 font-semibold">Fase</th>
                   <th scope="col" className="px-3 py-3 font-semibold">Bezichtigingen</th>
                   <th scope="col" className="px-3 py-3 font-semibold">Laatste bezichtiging</th>
                   <th scope="col" className="px-3 py-3 font-semibold">Gepland</th>
@@ -186,7 +206,7 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
               </thead>
               <tbody>
                 {zichtbaar.map((l) => (
-                  <LeadRij key={l.bezichtigerId} lead={l} />
+                  <LeadRij key={l.bezichtigerId} lead={l} stand={standVan.get(l.bezichtigerId)} kaart={!d.isVoorbeeld} />
                 ))}
               </tbody>
             </table>
@@ -248,11 +268,22 @@ function SyncBalk({ sync }: { sync: LeadSync }) {
   );
 }
 
-function LeadRij({ lead }: { lead: Lead }) {
+function LeadRij({ lead, stand, kaart }: { lead: Lead; stand: LeadStand | undefined; kaart: boolean }) {
   const nieuwste = lead.bezichtigingen[0]!;
+  const naam = lead.naam ?? <span className="font-normal text-text-muted">{lead.naamGezocht ? "Naam onbekend in Realworks" : "Naam nog niet opgehaald"}</span>;
   return (
     <tr className="border-t border-border align-top transition-colors duration-150 hover:bg-primary-subtle/50">
-      <td className="px-6 py-3 text-label">{lead.naam ?? <span className="font-normal text-text-muted">{lead.naamGezocht ? "Naam onbekend in Realworks" : "Naam nog niet opgehaald"}</span>}</td>
+      <td className="px-6 py-3 text-label">
+        {kaart ? (
+          <Link href={`/leads/${lead.bezichtigerId}`} className="text-primary hover:underline">{naam}</Link>
+        ) : (
+          naam
+        )}
+      </td>
+      <td className="px-3 py-3">
+        {stand ? <Label soort={FASE_STIJL[stand.soort]}>{stand.fase}</Label> : <span className="text-text-muted">–</span>}
+        {stand?.eigenaar && <div className="mt-0.5 text-caption text-text-muted">{stand.eigenaar}</div>}
+      </td>
       <td className="px-3 py-3">
         {lead.aantal === 1 ? (
           <span className="inline-flex flex-wrap items-center gap-2">

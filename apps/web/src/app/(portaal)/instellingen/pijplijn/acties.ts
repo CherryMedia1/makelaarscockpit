@@ -61,7 +61,9 @@ export async function faseActiefZetten(id: string, actief: boolean): Promise<voi
 
 export async function faseVerwijderen(id: string): Promise<void> {
   await alsBeheerder(async (tx, sessie) => {
-    if (!UUID.test(id) || !(await verwijderPijplijnFase(tx, sessie.tenantId, id))) return "fout=onbekend";
+    if (!UUID.test(id)) return "fout=onbekend";
+    const uitkomst = await verwijderPijplijnFase(tx, sessie.tenantId, id);
+    if (uitkomst !== "verwijderd") return `fout=${uitkomst}`;
     console.log(`pijplijn: fase ${id} verwijderd door gebruiker ${sessie.gebruikerId}`);
     return "opgeslagen=1";
   });
